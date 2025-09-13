@@ -128,3 +128,21 @@
 
 ## 15. Role–Profile–Access Diagram (Text View)
 
+
+<img width="531" height="306" alt="Screenshot 2025-09-13 193437" src="https://github.com/user-attachments/assets/f14f2f0b-d5d0-4982-bc5d-e5369a9ef0d6" />
+
+
+---
+
+## ✅ Phase 2 Deliverable
+By the end of **Phase 2**, we have:  
+- Configured company setup, users, profiles, roles, and OWDs.  
+- Enabled **Experience Cloud portals** for candidates and employers.  
+- Setup **security, login policies, and sharing models**.  
+- Prepared **sandbox & deployment plan**.  
+
+
+
+
+
+
