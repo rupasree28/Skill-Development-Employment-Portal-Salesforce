@@ -16,7 +16,7 @@ The project follows a **10-phase Salesforce Implementation Lifecycle** (Admin + 
 9. Reporting, Dashboards & Security Review  
 10. Final Presentation & Demo Day  
 
-📌 Current Status: **Phase 2 Completed**
+📌 Current Status: **Phase 4 Completed**
 
 #Project Documentation
 ##Skill Development & Employment Portal for Rural Youth on Salesforce
@@ -951,6 +951,691 @@ ________________________________________
 
 	Setup security, login policies, and sharing models.
 	Prepared sandbox & deployment plan.
+
+
+Phase 4: Process Automation (Admin)
+
+Introduction
+In this phase, we implemented automation features in Salesforce to streamline the workflow of our Skill Development & Employment Portal. The goal was to minimize manual tasks, improve accuracy, and ensure timely notifications for users (Students, Employers, Trainers, and Admins).
+Salesforce provides multiple tools for process automation, and we applied them to enforce business rules, trigger actions, and guide the overall process.
+________________________________________
+Step 1 — Preparing org and create test data (required before automation)
+Purpose: enable email delivery & notifications and create sample records you’ll use to test all automations (Job, Training, Student, Employer, Application).
+in my Trailhead Playground (Lightning Experience):
+1.	Launch  Playground / Dev Org
+•	Go to Trailhead → click your avatar → Hands-on Orgs / Launch your Trailhead Playground (or open your Developer Edition org).
+•	Confirm you're in the right org (org name shown in the top-right).
+•	(Why): all configuration and screenshots must be done inside the org where you’ll build automations.
+2.	Open Setup
+•	Click the Gear (⚙️) icon → Setup.
+3.	Enable Email Deliverability (so email alerts actually send)
+•	In Setup Quick Find, type Deliverability → open Deliverability.
+•	Set Access Level (or Access to Send Email) to All Email → Save.
+ 
+
+
+
+
+•	Why: Email Alerts use your org’s deliverability setting — Trailhead orgs default to 
+“System email only” which blocks test emails.
+
+
+4.	Create 2 simple Lightning Email Templates (you’ll wire these to Email Alerts later)
+•	In Setup Quick Find, type Email Templates → Email Templates.
+•	Click New Email Template (Lightning). Create:
+•	Template 1
+•	Name: Job Application – To Employer
+•	Subject: New application for: {!Job__c.Name} (replace merge field with your Job field if different)
+•	Body: short message: “A new candidate has applied. Applicant: {!Contact.Name}. Job: {!Job__c.Name}. View the application: {!Record.Link}”
+
+ 
+
+
+
+•	Template 2
+•	Name: Application Status – To Student
+•	Subject: Your application status for {!Job__c.Name}
+•	Body: “Hi {!Contact.FirstName}, your application status is now: {!Application__c.Status__c}.”
+•	Save templates. (You don’t need perfect merge fields now — placeholders are fine; we’ll fix exact merge fields when wiring alerts.)
+ 
+
+
+
+5.	Create Custom Notification Types (for in-app notifications)
+•	In Setup Quick Find, type Notification Builder → open Custom Notifications.
+•	Click New and create two types:
+•	New Application (API name New_Application) — Channels: Desktop & Mobile (select available channels).
+•	Application Status Changed (API name Application_Status_Changed) — Channels: Desktop & Mobile.
+•	Save.
+ 
+
+
+6.	Create sample test records (so automations can be tested)
+•	Use App Launcher (grid icon) → search for your custom objects (e.g., Jobs, Trainings, Applications, Contacts).
+•	Create:
+•	Employer Account (Accounts) — e.g., Acme Hiring
+•	Contact / Student — e.g., Rupa Sree (email a working email you control for testing)
+•	Job Posting — Title: Frontend Developer - Test, Location: Hyderabad, Salary Range: 20,000–40,000, Closing Date: (choose a future date)
+•	Training Program — Name: Full-Stack Bootcamp Test, Start Date: choose date
+•	Job Application — Link Applicant (Contact) to Job Posting, Status = Pending
+•	Save each record.
+
+Automation Components
+ 	Validation Rules
+o	Purpose: Ensure data integrity by restricting incorrect or incomplete data entry.
+o	Examples in Project:
+o	Prevent students from registering without entering a valid email and phone number.
+o	Ensure that job postings must include Salary Range and Job Location.
+o	Block duplicate skill names in the Skills object.
+o	Validation Rules ensure users enter correct data before saving records.
+ 	In our Skill Development & Employment Portal, we’ll create rules like:
+o	Students must enter a valid Email address
+o	Job Posting must include Salary Range
+________________________________________
+🔹 Procedure (do this in my Trailhead Playground):
+Rule 1: Candidate Email Validation
+
+1.	Go to Setup → Quick Find: Object Manager.
+2.	Select your Candidate(Contact) object (if you’re using Contact for students).
+3.	In the left panel, click Validation Rules → New.
+4.	Enter:
+•	Rule Name: Valid_Email
+•	Error Condition Formula:
+•	NOT(REGEX( Email , "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,4}$"))
+•	Error Message: Enter valid email
+•	Error Location: Field → Email.
+5.	Save.
+ 
+________________________________________
+Rule 2: Job Posting Salary Range Required
+
+1.	In Object Manager, open your Job  (custom object).
+2.	Go to Validation Rules → New.
+3.	Enter:
+•	Rule Name: Salary_Range_Required
+•	Error Condition Formula:
+•	ISBLANK( Salary_Range__c )
+•	Error Message: Salary Range must be provided for all job postings.
+•	Error Location: Field → Salary Range.
+4.	Save.
+ 
+
+🔹 Testing the Rules
+1.	Go to App Launcher → open Students (Contacts).
+•	Try creating a new student record with an invalid email (e.g., test@abc).
+•	Confirm Salesforce blocks the save and shows your error message.
+
+ 
+
+2.	Go to Job Postings → create a new job posting without entering Salary Range.
+•	Confirm Salesforce blocks save and shows your error message.
+________________________________________
+ 	Workflow Rules
+o	Purpose: Automate simple “if-then” actions based on record changes.
+o	Examples in Project:
+o	When a Job Application is submitted, send an email alert to the employer.
+o	If a training session is updated with a new schedule, notify registered students.
+	Workflow Rules help you send alerts, update fields, or create tasks automatically when conditions are met.
+	For our Skill Development & Employment Portal, let’s build one:
+________________________________________
+🔹 Use Case Example: Notify Employer when a Job Application is Submitted
+When a student submits a new Job Application, the employer should immediately get an Email Alert.
+Procedure
+1.	Go to Setup → Quick Find: Workflow Rules.
+2.	Click New Rule.
+3.	Select Object: Job (your custom object).
+4.	Click Next.
+5.	Enter:
+•	Rule Name: Notify_Employer_New_Application
+•	Evaluation Criteria: created (Evaluate the rule when a record is created).
+•	Rule Criteria:
+•	Field: Application Status
+•	Operator: equals
+•	Value: Pending
+ 
+
+
+•	Click Save & Next.
+
+ 
+
+
+________________________________________
+1.	In Workflow Actions, click Add Workflow Action → New Email Alert.
+
+ 
+2.	Enter:
+•	Description: New Job Application Alert to Employer
+•	Email Template: Select Job Application – To Employer (we created in Step 1).
+•	Recipients: Add Employer Email (lookup field on Job Posting → Employer → Contact Email).
+•	Save.
+
+ 
+________________________________________
+1.	Click Done.
+2.	On Workflow Rules list → select your new rule.
+3.	Click Activate.
+
+ 
+________________________________________
+Testing the Workflow Rule
+1.	Go to App Launcher → Open Job Applications
+ 
+2.	Create a new Job Application for a Student → choose Job Posting → set Status = Pending.
+3.	Save.
+ 
+4.	Check the Employer’s email inbox (or if testing with your email, check your inbox)
+
+ 
+
+•	Workflow Rule detail page (showing criteria + email action).
+•	Email received in inbox.
+________________________________________
+ 	Process Builder
+•	Purpose: Build more advanced automation with multiple conditions and actions.
+•	Examples in Project:
+•	Automatically assign a status = "Pending Review" when a new Job Application is submitted.
+•	Create a Task for Admin when a new Training Program is added.
+•	Send a Custom Notification to students when their application status changes.
+Why Process Builder?
+Workflow Rules are limited (one action at a time). Process Builder allows multiple conditions + multiple actions in a single automation.
+For our Skill Development & Employment Portal, we’ll build a process that:
+1.	When a Job Application is created or updated,
+•	Automatically set its Status = “Pending Review”.
+•	Create a Task for Admin to review the application.
+•	Send a Custom Notification to the student.
+________________________________________
+🔹 Procedure
+
+Create New Process
+1.	Go to Setup → Quick Find: Process Builder.
+2.	Click New.
+•	Process Name: Application_Submission_Process
+•	API Name: auto-filled
+•	Description: Automates actions when a job application is submitted.
+•	The process starts when: A record changes.
+•	Click Save.
+ 
+________________________________________
+Select Object & Criteria
+1.	Click + Add Object.
+•	Choose Job Application object.
+•	Start the process: when a record is created or edited.
+•	Save.
+2.	Under Criteria → Click + Add Criteria.
+•	Criteria Name: New_Application_Criteria
+•	Criteria for Executing Actions: Conditions are met
+•	Field: Application Status
+•	Operator: equals
+•	Value: Pending
+•	Save.
+
+ 
+________________________________________
+Add Immediate Actions
+(A) Field Update → Status
+•	Action Type: Update Records.
+•	Name: Update_Status_PendingReview.
+•	Record Type: Select the Job Application record that started the process.
+•	Field: Status → Value = Pending Review.
+•	Save.
+ 
+(B) Create a Task for Admin
+
+•	Action Type: Create a Record.
+•	Name: Create_Admin_Review_Task.
+•	Record Type: Task.
+•	Set Fields:
+•	Subject = Review New Job Application
+•	Assigned To = Admin User (lookup your username if you’re Admin).
+•	Status = Not Started
+•	Priority = High.
+•	Save.
+
+ 
+(C) Send Custom Notification to Student
+
+•	Action Type: Send Custom Notification.
+•	Name: Notify_Student_Application.
+•	Notification Type = Application Status Changed (from Step 1).
+•	Recipient: Student (Contact) related to the application.
+•	Title = Your job application has been received!
+•	Body = Your application is now under review.
+•	Save.
+
+ 
+________________________________________
+ Activate the Process
+
+•	Click Activate at the top.
+
+ 
+________________________________________
+🔹 Testing the Process
+1.	Go to Job Applications → create a new record.
+•	Student = (pick your test Contact).
+•	Job Posting = (pick your test Job).
+•	Status = Pending.
+•	Save.
+2.	Verify Results:
+•	The Status auto-updates to Pending Review.
+•	A Task is created and assigned to Admin.
+•	The Student receives a custom notification (check bell icon in Salesforce).
+
+
+
+ 
+
+ 
+Auto updated as pending review 
+________________________________________
+ 	Approval Process
+o	Purpose: Automate record approval workflows.
+o	Examples in Project:
+o	Employers’ job postings go through an Admin approval process before being visible to students.
+o	Training programs created by trainers require approval before publishing.
+o	Why Approval Process?
+It ensures that important records (like Job Postings or Training Programs) go through proper review before becoming active.
+For our Skill Development & Employment Portal, let’s create one for Job Postings:
+•	Employer submits a Job Posting.
+•	Admin reviews & approves.
+•	If approved → Status = “Approved”.
+•	If rejected → Status = “Rejected”.
+•	Employer gets email notification.
+________________________________________
+🔹 Procedure
+
+Create Approval Process
+1.	Go to Setup → Quick Find: Approval Processes.
+2.	Click Approval Process Wizard → Jump Start Wizard (simpler for demo).
+3.	Select Object: Job Posting.
+4.	Enter:
+•	Name: Job_Posting_Approval
+•	Unique Name: auto-filled.
+•	Entry Criteria: Status equals Submitted
+•	Approver: Automatically assign to user → Select Admin (your user).
+•	Email Template: Use a Job Approval template (you can reuse Job Application – To Employer template, or create a new one like Job Posting Approval Notification).
+•	Save.
+________________________________________
+Add Field Updates
+We’ll set Status field to change based on outcome.
+1.	In Approval Process → Click Final Approval Actions → Add New → Field Update.
+•	Name: Set_Status_Approved.
+•	Object: Job Posting.
+•	Field: Status.
+•	Value: Approved.
+•	Save.
+2.	In Final Rejection Actions → Add Field Update.
+•	Name: Set_Status_Rejected.
+•	Field: Status.
+•	Value: Rejected.
+•	Save.
+________________________________________
+Activate Approval Process
+1.	Click Activate.
+________________________________________
+🔹 Testing the Approval Process
+1.	Go to App Launcher → Job Postings.
+2.	Create a new Job Posting:
+•	Title = Backend Developer Test.
+•	Salary Range = 20,000–40,000.
+•	Status = Submitted.
+•	Save.
+3.	On the record detail page → click Submit for Approval.
+4.	Login as Admin (your user should already be approver).
+•	Open the Approval Request.
+•	Click Approve.
+•	Confirm Status field = Approved.
+________________________________________
+ 	Flow Builder
+Salesforce Flows allowed us to create more advanced automations, including screens, record-triggered actions, and scheduled tasks.
+•	Screen Flow: Guided student registration with conditional questions (e.g., education background).
+•	Record-Triggered Flow: When a job is closed, automatically update related applications to "Not Selected".
+•	Scheduled Flow: Send reminders to students about upcoming training sessions.
+•	Auto-Launched Flow: Auto-assign default skills to new students upon registration.
+
+Step 6: Flow Builder — the most powerful automation tool in Salesforce.
+We’ll do this step-by-step with four types of Flows:
+1.	Record-Triggered Flow → auto actions when a record changes.
+2.	Screen Flow → guided wizard for users.
+3.	Scheduled Flow → runs on a schedule.
+4.	Auto-launched Flow → called by other automation (Process Builder, Apex).
+________________________________________Use Case:
+When a Job Application is Approved, automatically:
+•	Enroll the Student into a default Training Program.
+•	Send them a notification.
+________________________________________
+🔹 Procedure
+1.	Go to Flow Builder
+•	Setup → Quick Find: Flows → Click New Flow.
+•	Select Record-Triggered Flow.
+•	Object = Job Application.
+•	Trigger = When a record is updated.
+•	Condition = Status equals Approved.
+•	Optimize for = Actions and Related Records.
+•	Click Done.
+
+ 
+________________________________________
+2.	Add Action: Create Record (Training Enrollment)
+•	In canvas, click + → Create Records.
+•	Label = Enroll Student in Training.
+•	Record Type = Training Enrollment (or junction object between Student & Training, depending on your schema).
+ 
+•	Set Field Values:
+•	Student__c = {!$Record.Student__c}
+•	Training__c = “Full-Stack Bootcamp Test” (pick your default Training record).
+•	Save.
+
+ 
+________________________________________
+3.	Add Action: Send Notification
+•	Click + → Action.
+•	Action Type = Send Custom Notification.
+•	Label = Notify Student.
+•	Notification Type = Application Status Changed.
+•	Recipient = {!$Record.Student__c}.
+•	Title = Congrats!
+•	Body = You have been enrolled in the training program.
+•	Save.
+ 
+________________________________________
+4.	Save & Activate Flow
+•	Flow Label: Auto_Enroll_Student_On_Approval.
+•	Save → Activate.
+
+ 
+________________________________________
+🔹 Testing
+1.	Go to Job Applications → Pick one with Status = Pending Review.
+2.	Update Status = Approved → Save.
+3.	Check:
+•	Student auto-enrolled in Training (new Training Enrollment record created).
+•	Student receives Notification in Salesforce (bell icon).
+ 
+
+
+________________________________________
+ 	Email Alerts
+o	Used to send automated emails for different actions:
+o	Job Application submitted → Employer notified.
+o	Training Program approved → Trainer notified.
+o	Application accepted → Student notified.
+ Objective
+o	To send automatic email notifications to users when specific conditions are met.
+o	In our project use case (Skill Development Employment Portal):
+•	When a Candidate is shortlisted for a Job, send them an automated email.
+•	When a Job Application is Rejected, send a rejection email.
+•	When a Training Enrollment is Approved, send confirmation to the Candidate.
+________________________________________
+🔹 Procedure
+
+Step 1: Create an Email Template
+1.	In Salesforce Setup, go to App Launcher → Search “Email Templates” → New Email Template.
+2.	Enter details:
+•	Email Template Name: Candidate Shortlist Notification
+•	Subject: Congratulations! You have been shortlisted
+•	Email Body:
+•	Hello {!Candidate__c.Name},
+•	
+•	Congratulations! You have been shortlisted for the job: {!Job__c.Name}.  
+•	Please log in to the portal for next steps.  
+•	
+•	Regards,  
+•	Skill Development Employment Portal Team
+•	Save.
+ 
+________________________________________
+Step 2: Create an Email Alert
+
+1.	In Setup, search Email Alerts → New Email Alert.
+2.	Fill details:
+•	Description: Notify Candidate when Shortlisted
+•	Email Template: Candidate Shortlist Notificat
+•	ion
+•	Recipient Type: Select Related User → Candidate Email field
+•	Save.
+ 
+________________________________________
+Step 3: Add Email Alert to Automation
+You can attach this Email Alert to:
+•	Workflow Rule (when Job Application Status = Shortlisted)
+•	Process Builder (if we want more conditions, e.g., Skill Match ≥ 80%)
+•	Flow Builder (for advanced logic, e.g., send both Candidate & Recruiter emails).
+Use Case
+When a Job Application’s Status = Shortlisted, the candidate automatically receives the shortlist notification email.
+________________________________________
+🔹 Step-by-Step Procedure
+Step 1: Go to Workflow Rules
+1.	In Setup, search for Workflow Rules.
+2.	Click New Rule.
+________________________________________
+Step 2: Choose Object
+1.	Select Job Application (Custom Object) (assuming you created this in earlier phases).
+2.	Click Next.
+________________________________________
+Step 3: Define Rule Criteria
+1.	Rule Name: Shortlist Notification Rule
+2.	Evaluation Criteria: created, and every time it’s edited
+3.	Rule Criteria:
+•	Field: Status
+•	Operator: equals
+•	Value: Shortlisted
+4.	Save & Next.
+
+ 
+________________________________________
+Step 4: Add Workflow Action → Email Alert
+1.	Under Immediate Workflow Actions, click Add Workflow Action → New Email Alert.
+2.	Choose the previously created Candidate Shortlist Notification Email Alert.
+3.	Save.
+________________________________________
+Step 5: Activate the Workflow
+1.	Click Activate.
+2.	Done ✅
+
+ 
+________________________________________
+🔹 Workflow Flow Diagram
+Job Application Status = Shortlisted  
+        ↓  
+Workflow Rule Triggers  
+        ↓  
+Email Alert → Sends “You are shortlisted” email to Candidate  
+________________________________________
+Now, whenever a recruiter updates a candidate’s application to Shortlisted, the system will send an automated email 🎉
+
+
+________________________________________
+ 	Field Updates
+•	Automated field updates to reduce manual work:
+•	Application Status auto-updates from "Pending" → "Under Review" → "Accepted/Rejected".
+•	Job Posting status auto-updates to "Expired" after the closing date.
+
+Objective
+Field Updates allow us to automatically update a field’s value when certain conditions are met.
+This reduces manual work and ensures data consistency.
+________________________________________
+🔹 Use Case in  Project
+In the Skill Development Employment Portal, let’s implement:
+•	When a Job Application Status = Selected, automatically update the Placement Status field on the Candidate record to Placed.
+This way, admins and recruiters don’t need to manually mark a candidate as “Placed.”
+________________________________________
+🔹 Step-by-Step Procedure
+Step 1: Go to Workflow Rules
+1.	In Setup, search for Workflow Rules.
+2.	Click New Rule.
+3.	Select Job Application (Custom Object).
+4.	Click Next.
+________________________________________
+Step 2: Define Rule Criteria
+1.	Rule Name: Placement Update Rule
+2.	Evaluation Criteria: created, and every time it’s edited
+3.	Rule Criteria:
+•	Field: Status
+•	Operator: equals
+•	Value: Selected
+4.	Save & Next.
+________________________________________
+Step 3: Add Workflow Action → Field Update
+1.	Under Immediate Workflow Actions, click Add Workflow Action → New Field Update.
+2.	Action Name: Update Candidate Placement Status
+3.	Field to Update: Candidate → Placement Status
+4.	New Value: Placed
+5.	Save.
+________________________________________
+Step 4: Activate the Workflow
+1.	Click Activate.
+2.	Done ✅
+________________________________________
+🔹 Workflow Flow Diagram
+Job Application Status = Selected  
+        ↓  
+Workflow Rule Triggers  
+        ↓  
+Field Update → Candidate.Placement_Status = "Placed"  
+________________________________________
+This ensures automatic synchronization between job application status and candidate placement status.
+We already saw this field updates in our earlier steps while creating workflow rules 
+
+
+
+________________________________________
+ 	Tasks
+
+•	Automated Task creation for Admins and Trainers:
+•	Admin gets a task to review new Job Postings.
+•	Trainer gets a task to prepare study materials when a new Training Session is created.
+
+ Objective
+Tasks allow Salesforce to automatically create to-do items for users (Recruiters, Admins, Trainers, etc.) when specific conditions are met.
+This ensures no important step is missed.
+________________________________________
+🔹 Use Case in Project
+In the Skill Development Employment Portal, let’s implement:
+•	When a Candidate applies for a Job, automatically create a Task for the Recruiter to review the application.
+This helps recruiters stay on top of new applications.
+________________________________________
+🔹 Step-by-Step Procedure
+
+Step 1: Go to Workflow Rules
+1.	In Setup, search Workflow Rules.
+2.	Click New Rule.
+3.	Select Job Application (Custom Object).
+4.	Click Next.
+________________________________________
+Step 2: Define Rule Criteria
+1.	Rule Name: Candidate Application Task Rule
+2.	Evaluation Criteria: created
+3.	Rule Criteria:
+•	Field: Status
+•	Operator: equals
+•	Value: Applied
+4.	Save & Next.
+________________________________________
+Step 3: Add Workflow Action → New Task
+1.	Under Immediate Workflow Actions, click Add Workflow Action → New Task.
+ 
+
+2.	Fill details:
+•	Assigned To: Recruiter (Related User or specific role)
+•	Subject: Review New Candidate Application
+•	Due Date: Rule Trigger Date + 2 Days
+•	Priority: High
+•	Status: Not Started
+3.	Save.
+
+ 
+________________________________________
+Step 4: Activate the Workflow
+1.	Click Activate.
+2.	Done ✅
+________________________________________
+🔹 Workflow Flow Diagram
+Job Application Created (Status = Applied)  
+        ↓  
+Workflow Rule Triggers  
+        ↓  
+Task Created for Recruiter: "Review Candidate Application"  
+________________________________________
+This ensures that every application gets recruiter attention without delay.
+ 
+________________________________________
+ 	Custom Notifications
+
+•	In-App Notifications were configured for real-time alerts:
+•	Student receives a notification when their application is shortlisted.
+•	Employer gets a notification when a new candidate applies.
+ Objective
+Custom Notifications allow Salesforce to send real-time alerts directly inside the Salesforce app (web or mobile), instead of only through email.
+This keeps users (Recruiters, Admins, Trainers, Candidates) informed immediately.
+________________________________________
+🔹 Use Case in Project
+In the Skill Development Employment Portal, let’s implement:
+•	When a Candidate is Placed in a Job, send a Custom Notification to the Recruiter and Admin saying:
+“Candidate [Name] has been successfully placed in [Job Title].”
+This makes the platform more interactive and responsive.
+________________________________________
+🔹 Step-by-Step Procedure
+
+Step 1: Enable Custom Notifications
+1.	Go to Setup → Search Notification Builder → Click Notification Types.
+2.	Click New.
+•	Label: Placement Success Notification
+•	API Name: Placement_Success_Notification
+•	Supported Channels: Desktop + Mobile
+3.	Save.
+________________________________________
+Step 2: Create Process/Flow to Trigger Notification
+1.	Go to Setup → Flow Builder (recommended instead of Workflow for Custom Notifications).
+2.	Create a Record-Triggered Flow on Job Application (Custom Object).
+3.	Entry Criteria:
+•	Field: Status
+•	Operator: equals
+•	Value: Selected
+4.	Add an Action → Send Custom Notification.
+•	Notification Type: Placement Success Notification
+•	Recipient: Recruiter (Related User) + Admin Role
+•	Notification Title: Candidate Placement Update
+•	Notification Body: Candidate {!Candidate__c.Name} has been placed in Job {!Job__c.Name}.
+5.	Save & Activate.
+________________________________________
+Step 3: Test It
+1.	Change a Job Application Status → Selected.
+2.	Recruiter & Admin should instantly see a Salesforce Notification (bell icon top-right).
+
+ 
+
+Already did in previous steps to test 
+________________________________________
+
+🔹 Workflow Flow Diagram
+Job Application Status = Selected  
+        ↓  
+Record-Triggered Flow  
+        ↓  
+Custom Notification → Recruiter + Admin  
+________________________________________
+ Process Automation Phase (Admin) is complete:
+•	Validation Rules
+•	Workflow Rules
+•	Process Builder
+•	Approval Process
+•	Flow Builder
+•	Email Alerts
+•	Field Updates
+•	Tasks
+•	Custom Notifications
+
+________________________________________
+ Benefits of Process Automation in the Project
+•	Reduced manual effort for Admins and Trainers.
+•	Faster response times for students and employers.
+•	Ensured data accuracy through validation rules.
+•	Improved user experience with timely notifications.
+•	Standardized approval flows to maintain quality.
+
+
 
 
 
