@@ -16,7 +16,7 @@ The project follows a **10-phase Salesforce Implementation Lifecycle** (Admin + 
 9. Reporting, Dashboards & Security Review  
 10. Final Presentation & Demo Day  
 
-📌 Current Status: **Phase 4 Completed**
+📌 Current Status: **Phase 5 Completed**
 
 #Project Documentation
 ##Skill Development & Employment Portal for Rural Youth on Salesforce
@@ -1637,5 +1637,634 @@ ________________________________________
 
 
 
+
+Phase 5: Apex Programming (Developer)
+
+🔹 Objective
+In this phase, we extend the portal’s functionality using Apex programming.
+While earlier phases focused on data modeling and automation, this phase introduces custom logic for:
+o	Managing skills and training (Skill Development)
+o	Automating job applications and employer workflows (Employment)
+o	Handling large-scale data using asynchronous processing
+This ensures that both Skill Development and Employment Management are deeply integrated into the portal.
+________________________________________
+🔹 Apex Components
+1. Apex Classes & Objects
+o	SkillManager.cls → Assigns skills to candidates after training completion.
+o	TrainingEnrollment.cls → Handles candidate enrollment into training programs.
+o	JobApplicationHandler.cls → Validates and processes job applications.
+o	EmployerHelper.cls → Helps recruiters filter candidates by skills and certifications.
+ Step 1: Implementing SkillManager.cls
+Purpose in your project
+This class will allow you to assign skills to candidates once they complete a training program.
+For example:
+•	Candidate Rupa finishes "Java Full Stack" training.
+•	System automatically assigns "Java Full Stack" skill to Rupa’s profile.
+________________________________________
+🛠️ Step 1A: Make sure custom objects exist
+Before coding, check that these objects exist in your org:
+1.	Candidate__c – stores candidate details (like Name, Email, Phone, etc.)
+2.	Skill__c – stores skill details (like Skill Name, Candidate reference, Certification, etc.)
+👉 Procedure:
+•	Go to Setup → Object Manager.
+•	Check if Candidate__c and Skill__c exist.
+•	If not, create them:
+•	Candidate__c → Fields: Name (standard), Email, Phone.
+ 
+•	Skill__c → Fields: Name (standard), Lookup → Candidate__c.
+ 
+________________________________________
+🛠️ Step 1B: Create Apex Class in Developer Console
+1.	In Salesforce, click your avatar (top right).
+2.	Select Developer Console.
+3.	Go to File → New → Apex Class.
+4.	Enter name: SkillManager.
+
+ 
+________________________________________
+🛠️ Step 1C: Test the Class (Execute Anonymous Window)
+1.	In Developer Console → Press Ctrl + E (Execute Anonymous).
+2.	Run this test code:
+// Example: Assign "Java Programming" skill to a Candidate Id testCandidateId = 'PUT_A_VALID_CANDIDATE_ID_HERE'; SkillManager.assignSkill(testCandidateId, 'Java Programming'); 
+👉 Replace PUT_A_VALID_CANDIDATE_ID_HERE with an actual Candidate__c Id from your org.
+•	To find this, go to App Launcher → Candidates → open a candidate record → copy the Id from URL.
+
+ 
+________________________________________
+🛠️ Step 1D: Verify the Result
+1.	Go to App Launcher → Skills tab.
+2.	You should see a new Skill record created, linked to that Candidate.
+
+ 
+
+________________________________________
+2. Apex Triggers
+o	CandidateTrigger (before insert) → Validate unique email & phone.
+o	TrainingEnrollmentTrigger (after insert) → Update candidate’s “Skills Acquired” after course completion.
+o	JobApplicationTrigger (after update) → Auto-reject if required skills are missing.
+o	
+Step 1: Verify Objects & Fields
+1.	Training__c
+•	Candidate__c → Lookup(Candidate__c)
+•	Training_Status__c → Picklist (values: Completed, In Progress)
+•	Training_Name__c → Text
+ 
+2.	Skill__c
+•	Skill_Name__c → Text (name of skill)
+•	Candidate__c → Lookup(Candidate__c)
+
+ 
+✅ Make sure these fields exist.
+________________________________________
+Step 2: Create Apex Helper Class
+Go to Setup → Apex Classes → New and create SkillAssignmentHelper.cls:
+ 
+________________________________________
+Step 3: Create the Trigger
+1.	Go to Setup → Object Manager → Training__c → Triggers → New
+2.	Enter:
+trigger AssignSkillAfterTraining on Training__c (after update) { SkillAssignmentHelper.assignSkillsAfterTraining(Trigger.new, Trigger.oldMap); } 
+✅ This ensures your trigger is bulk-safe and clean.
+ 
+________________________________________
+Step 4: Test the Trigger
+1.	Open a Training__c record for a candidate.
+ 
+
+
+2.	Change Training_Status__c from In Progress → Completed.
+ 
+
+3.	Save the record.
+4.	Go to the candidate record → check the Skills related list. You should see a new Skill__c record created automatically.
+ 
+________________________________________
+Step 5: Test Class (for Deployment)
+ 
+Summary
+1.	Using Training__c instead of Training_Enrollment__c.
+2.	Using  Skill_Name__c instead of Name for Skill__c.
+3.	Trigger fires after update and inserts skills when training is completed.
+
+________________________________________
+3.	Trigger Design Pattern
+A Trigger Design Pattern is a way to structure your Apex triggers so they are:
+•	Bulk-safe – handles multiple records at once
+•	Readable and maintainable – logic is separated from the trigger
+•	Reusable – can call helper classes for different operations
+Why it’s needed:
+Without a design pattern, your triggers can become messy and cause:
+•	DML limits errors
+•	Hard-to-maintain code
+•	Duplicate logic
+________________________________________
+2️⃣ Common Trigger Design Pattern Structure
+
+1.	Trigger – only contains calls to a handler class
+2.	Handler class – contains methods like beforeInsert, afterInsert, beforeUpdate, afterUpdate
+3.	Separation of concerns – triggers don’t directly perform business logic
+Example Structure:
+// Trigger trigger TrainingTrigger on Training__c (before insert, after update) { if(Trigger.isBefore && Trigger.isInsert) { TrainingHandler.beforeInsert(Trigger.new); } if(Trigger.isAfter && Trigger.isUpdate) { TrainingHandler.afterUpdate(Trigger.new, Trigger.oldMap); } } // Handler Class public class TrainingHandler { public static void beforeInsert(List<Training__c> newTrainings) { // Logic before insert } public static void afterUpdate(List<Training__c> updatedTrainings, Map<Id, Training__c> oldMap) { for(Training__c t : updatedTrainings) { Training__c oldT = oldMap.get(t.Id); if(t.Training_Status__c == 'Completed' && oldT.Training_Status__c != 'Completed') { Skill__c skill = new Skill__c( Candidate__c = t.Candidate__c, Skill_Name__c = t.Training_Name__c ); insert skill; } } } } 
+________________________________________
+3️⃣ Benefits
+•	Bulk-safe: handles multiple Training__c records at once
+•	Easy to maintain: business logic is in the handler, not in the trigger
+•	Scalable: easy to extend for other objects like Job applications
+________________________________________
+4️⃣ Implement in our Project
+1.	Create the Handler Class
+•	Go to Setup → Apex Classes → New
+•	Name it TrainingHandler
+•	Paste the TrainingHandler code of it
+ 
+
+
+2.	Create the Trigger
+•	Go to Setup → Object Manager → Training__c → Triggers → New
+•	Name it TrainingTrigger
+•	Paste the trigger code 
+ 
+
+
+3.	Test the Trigger
+•	Use the anonymous Apex script we wrote earlier, or the test class
+•	Update Training_Status__c to Completed
+•	Verify a Skill__c record is automatically created
+ 
+
+
+ 
+
+o	All triggers delegate logic to Handler Classes.
+o	Example: JobApplicationTrigger → JobApplicationHandler.cls.
+o	Ensures scalability and easy maintenance.
+
+
+________________________________________
+4. SOQL & SOSL Queries
+o	SOQL: Fetch candidates with specific skills for a given job.
+o	SOSL: Search courses or certifications across multiple objects quickly.
+
+SOQL lets you fetch records from your custom objects (Candidate, Skill, Job, Training).
+
+ Step 1: Open Developer Console
+1.	Log in to Salesforce.
+2.	In the top-right corner → Click on your avatar → Developer Console.
+3.	Developer Console opens in a new window.
+________________________________________
+Step 2: Run a Simple SOQL Query
+1.	In Developer Console → Go to Query Editor (bottom tab).
+2.	Type this query:
+SELECT Id, Email__c, Education__c FROM Candidate__c 
+3.	Click Execute.
+4.	You will now see all Candidate records with their Email & Education in a table.
+
+ 
+________________________________________
+Step 3: Run SOQL Inside Apex (Execute Anonymous)
+1.	In Developer Console → Debug → Open Execute Anonymous Window (Ctrl+E).
+2.	Paste this code:
+List<Candidate__c> candidates = [ SELECT Id, Email__c, Education__c, Place__c FROM Candidate__c ]; System.debug('Candidate Records: ' + candidates); 
+3.	Tick ✅ Open Log → Click Execute.
+ 
+4.	In the log window → Search for USER_DEBUG → you’ll see candidate records printed.
+
+ 
+________________________________________
+Step 4: SOQL with Condition
+Example: Get all candidates from Nagari:
+
+List<Candidate__c> candList = [ SELECT Id, Email__c, Education__c, Place__c FROM Candidate__c WHERE Place__c = 'Nagari' ]; System.debug('Candidates from Nagari: ' + candList); 
+ 
+ 
+________________________________________
+🔹 Step: Implementing SOSL
+SOSL is used when you want to search across multiple objects at once (Candidate, Skill, Job).
+________________________________________
+ Step 1: Execute SOSL in Developer Console
+1.	Open Execute Anonymous (Ctrl+E).
+2.	Paste this code:
+List<List<SObject>> searchResults = [ FIND 'Java*' IN ALL FIELDS RETURNING Candidate__c (Id, Email__c, Education__c), Skill__c (Id, Skill_Name__c, Proficiency_Level__c), Job__c (Id, Job_Title__c, Job_Department__c) ]; System.debug('SOSL Results: ' + searchResults); 
+ 
+
+3.	Click Execute with Open Log.
+4.	In the log, search USER_DEBUG → You’ll see results like:
+ 
+•	Candidates who have “Java” in their Education/Email.
+•	Skills with “Java” in Skill_Name__c.
+•	Jobs with “Java” in Job_Title__c or Department.
+________________________________________
+Step: Apply to our Project
+Example Use Cases:
+1.	Find Jobs Matching Candidate Skills
+Id candId = 'PUT_CANDIDATE_ID_HERE'; List<Skill__c> skills = [ SELECT Skill_Name__c FROM Skill__c WHERE Candidate__c = :candId ]; Set<String> skillNames = new Set<String>(); for (Skill__c s : skills) { skillNames.add(s.Skill_Name__c); } List<Job__c> matchingJobs = [ SELECT Id, Job_Title__c, Job_Department__c, salary_range__c FROM Job__c WHERE Job_Department__c IN :skillNames ]; System.debug('Matching Jobs: ' + matchingJobs); 
+
+
+ 
+
+ 
+
+2.	Search Candidates, Skills, Jobs at Once
+(Use the SOSL example above).
+________________________________________
+
+5. Collections (List, Set, Map)
+o	List → Store multiple training enrollments.
+o	Set → Prevent duplicate skill assignments.
+o	Map → Map candidate IDs to their completed courses.
+
+Apex Collections
+Collections are variables that store multiple values in a single variable. Apex supports three types:
+Type	Description	Example Use in Your Project
+List	Ordered collection (like array)	Store all Skills of a Candidate
+Set	Unordered collection with unique values	Keep unique Skill Names
+Map	Key-value pairs	Map Candidate Id → Candidate record
+________________________________________
+1️ Lists
+Example: List of Skills for a Candidate
+// Fetch all skills for a candidate Id candId = 'PUT_CANDIDATE_ID_HERE'; List<Skill__c> skillList = [ SELECT Skill_Name__c, Proficiency_Level__c FROM Skill__c WHERE Candidate__c = :candId ]; // Iterate through the list for(Skill__c s : skillList){ System.debug('Skill Name: ' + s.Skill_Name__c + ', Level: ' + s.Proficiency_Level__c); } 
+ 
+
+Use Case: Display all skills of a candidate 
+ 
+________________________________________
+2️ Sets
+Example: Unique Skill Names
+List<Skill__c> skills = [ SELECT Skill_Name__c FROM Skill__c WHERE Candidate__c = :candId ]; Set<String> uniqueSkills = new Set<String>(); for(Skill__c s : skills){ uniqueSkills.add(s.Skill_Name__c); } System.debug('Unique Skills: ' + uniqueSkills); 
+
+
+ 
+
+ 
+Use Case: Avoid duplicate skills when assigning new ones.
+________________________________________
+3️ Maps
+Example: Candidate Id → Candidate Record
+// Fetch all candidates in a department List<Candidate__c> candList = [ SELECT Id, Email__c, Education__c FROM Candidate__c WHERE Education__c = 'B Tech' ]; // Convert to map for easy lookup Map<Id, Candidate__c> candidateMap = new Map<Id, Candidate__c>(candList); // Access a candidate quickly by Id Id myCandId = 'PUT_CANDIDATE_ID_HERE'; Candidate__c myCandidate = candidateMap.get(myCandId); System.debug('Candidate Email: ' + myCandidate.Email__c); 
+
+ 
+
+
+ 
+Use Case: When matching candidates to jobs based on skill sets, you can quickly look up a candidate without looping through a list.
+________________________________________
+4️ Combine Collections
+Example: Filter Jobs Based on Candidate Skills
+Id candId = 'PUT_CANDIDATE_ID_HERE'; // Step 1: Get candidate skills List<Skill__c> skills = [ SELECT Skill_Name__c FROM Skill__c WHERE Candidate__c = :candId ]; Set<String> skillSet = new Set<String>(); for(Skill__c s : skills){ skillSet.add(s.Skill_Name__c); } // Step 2: Fetch Jobs where department matches any skill List<Job__c> jobs = [ SELECT Id, Job_Title__c, Job_Department__c FROM Job__c WHERE Job_Department__c IN :skillSet ]; System.debug('Matching Jobs: ' + jobs); 
+
+
+ 
+Explanation:
+•	Set prevents duplicate skill names.
+•	List stores Jobs that match those skills.
+
+ 
+
+Filters job based on skills, as there is no job here shows empty set
+________________________________________
+5️ Test Collections in Developer Console
+1.	Open Developer Console → Execute Anonymous
+2.	Paste the above example for filtering jobs by candidate skills
+3.	Click Execute
+4.	Check Logs → USER_DEBUG for outputs
+________________________________________
+This completes Collections (List, Set, Map) and how to use them practically in your Skill & Employment Portal.
+
+________________________________________
+6. Control Statements
+o	IF-ELSE → Validate candidate eligibility.
+o	FOR loops → Process multiple enrollments/applications in bulk.
+Control statements help you decide the flow of code—like loops, conditionals, and branching. They are essential when processing Candidates, Skills, Trainings, or Jobs.
+________________________________________
+1️ IF–ELSE Statements
+✅ Example: Assign Skill Based on Education
+ 
+Use Case: Auto-assign skills based on candidate education.
+ 
+________________________________________
+2️ FOR Loops
+Example: Assign Default Skill to Multiple Candidates
+List<Candidate__c> candidates = [SELECT Id FROM Candidate__c WHERE Place__c = 'Nagari']; List<Skill__c> skillsToInsert = new List<Skill__c>(); for(Candidate__c c : candidates) { skillsToInsert.add(new Skill__c( Candidate__c = c.Id, Skill_Name__c = 'Profile Created' )); } insert skillsToInsert; System.debug('Default skills assigned to ' + skillsToInsert.size() + ' candidates'); 
+
+
+ 
+
+ 
+________________________________________
+3️ WHILE Loops
+ Example: Process Jobs Until Threshold
+List<Job__c> jobs = [SELECT Id, Job_Title__c FROM Job__c LIMIT 5]; Integer i = 0; while(i < jobs.size()) { System.debug('Processing Job: ' + jobs[i].Job_Title__c); i++; } 
+
+ 
+
+ 
+________________________________________
+4️ SWITCH Statements (Apex 50+)
+
+Example: Assign Skill Category Based on Department
+String dept = 'IT'; String category; switch on dept { when 'IT' { category = 'Technical'; } when 'HR' { category = 'Management'; } when 'Sales' { category = 'Business'; } when else { category = 'General'; } } System.debug('Skill Category: ' + category); 
+
+ 
+
+
+ 
+________________________________________
+5 Practical usecases of our Project
+•	Use IF–ELSE to validate inputs (e.g., check candidate email, contact number).
+•	Use FOR loops to bulk process multiple candidates, jobs, or skills.
+•	Use SWITCH to categorize jobs, skills, or training programs.
+•	Avoid SOQL inside loops—always query first, then loop through results.
+________________________________________
+ Test in Developer Console
+List<Candidate__c> candidates = [SELECT Id, Education__c FROM Candidate__c LIMIT 3]; for(Candidate__c c : candidates) { if(c.Education__c == 'B Tech') { System.debug('Assign Programming Skill to: ' + c.Id); } else { System.debug('Assign General Skill to: ' + c.Id); } } 
+•	Open Execute Anonymous → Run → Check Logs → USER_DEBUG
+•	You will see which candidate gets which skill.
+
+________________________________________
+7. Batch Apex
+
+Batch Apex allows you to process thousands of records asynchronously in batches of 200 by default.
+A batch class implements the Database.Batchable<SObject> interface and has 3 main methods:
+Method	Purpose
+start	Collects the records to process (returns a QueryLocator or iterable)
+execute	Processes each batch of records
+finish	Executes code after all batches are processed
+________________________________________
+1 Use Case for our Project
+Scenario: Assign a default skill to all candidates who completed a training program.
+•	Object: Candidate__c
+•	Related Object: Training__c
+•	Create Skill__c records for each candidate after training completion.
+________________________________________
+2️ Example Batch Apex Class
+global class AssignSkillBatch implements Database.Batchable<SObject> { // Step 1: start() - Fetch all completed trainings global Database.QueryLocator start(Database.BatchableContext BC) { return Database.getQueryLocator([ SELECT Id, Candidate__c, Training_Name__c FROM Training__c WHERE Training_Status__c = 'Completed' ]); } // Step 2: execute() - Process each batch of records global void execute(Database.BatchableContext BC, List<Training__c> scope) { List<Skill__c> skillsToInsert = new List<Skill__c>(); for(Training__c tr : scope) { skillsToInsert.add(new Skill__c( Candidate__c = tr.Candidate__c, Skill_Name__c = tr.Training_Name__c )); } if(!skillsToInsert.isEmpty()) { insert skillsToInsert; } } // Step 3: finish() - Optional: Send notification or log global void finish(Database.BatchableContext BC) { System.debug('Batch Apex completed: Skills assigned successfully!'); } } 
+
+ 
+________________________________________
+3️ How to Run Batch Apex
+Option 1: Execute Anonymous
+// Run batch with batch size of 200 AssignSkillBatch batch = new AssignSkillBatch(); Database.executeBatch(batch, 200); 
+
+ 
+Option 2: Schedule Batch (optional)
+String cronExp = '0 0 23 * * ?'; // Run daily at 11 PM System.schedule('Daily Skill Assignment', cronExp, new AssignSkillBatch()); 
+________________________________________
+4️ How It Works
+1.	start() → Fetch all Training__c records with status Completed
+2.	execute() → For each batch of 200 trainings, create corresponding Skill__c records
+3.	finish() → Logs or sends notification when batch is complete
+
+o	Use case: Bulk update “Certified” status for thousands of candidates after training completion.
+o	Supports Skill Development at scale.
+ 
+________________________________________
+8. Queueable Apex
+o	Use case: Match skills to jobs when a new job posting is created.
+o	Asynchronous processing improves performance.
+
+Queueable Apex is like a lightweight version of Batch Apex:
+•	Can be run asynchronously
+•	Can be chained (one job starts another)
+•	Supports complex objects, SObjects, and collections
+________________________________________
+1️ Use Case in Your Project
+Scenario: Automatically assign a skill to a candidate right after a training is marked complete, without waiting for a batch job.
+•	Object: Candidate__c
+•	Related Object: Training__c
+•	Create Skill__c record asynchronously after training completion.
+________________________________________
+2️ Queueable Apex Class Example
+public class AssignSkillQueueable implements Queueable { private Id trainingId; // Constructor public AssignSkillQueueable(Id trId) { this.trainingId = trId; } public void execute(QueueableContext context) { // Fetch the Training record Training__c tr = [ SELECT Id, Candidate__c, Training_Name__c FROM Training__c WHERE Id = :trainingId LIMIT 1 ]; // Create the Skill record Skill__c skill = new Skill__c( Candidate__c = tr.Candidate__c, Skill_Name__c = tr.Training_Name__c ); insert skill; System.debug('Skill assigned asynchronously: ' + skill.Skill_Name__c); } } 
+
+ 
+________________________________________
+3️ How to Run Queueable Apex
+Option 1: Execute Anonymous (Immediate)
+Id completedTrainingId = 'PUT_TRAINING_RECORD_ID_HERE'; System.enqueueJob(new AssignSkillQueueable(completedTrainingId)); 
+
+
+ 
+Option 2: Chain Queueable Jobs
+// Inside execute(), you can enqueue another job if needed System.enqueueJob(new AnotherQueueableJob(nextId)); 
+________________________________________
+4️ Practical Implementation in our Project
+1.	Create the class AssignSkillQueueable in Apex Classes
+2.	After a training is marked Completed, run this queueable:
+•	Either manually via Developer Console
+•	Or trigger it automatically via after update trigger on Training__c
+Example Trigger:
+trigger TrainingTrigger on Training__c (after update) { for(Training__c tr : Trigger.new) { Training__c oldTr = Trigger.oldMap.get(tr.Id); // Only enqueue when status changes to Completed if(tr.Training_Status__c == 'Completed' && oldTr.Training_Status__c != 'Completed') { System.enqueueJob(new AssignSkillQueueable(tr.Id)); } } } 
+
+ 
+________________________________________
+Benefits
+•	Lightweight compared to batch
+•	Runs asynchronously without blocking UI
+•	Can process large SObjects safely
+•	Can be chained for multiple sequential operations
+
+________________________________________
+9. Scheduled Apex
+
+Scheduled Apex allows you to schedule any Apex class that implements the Schedulable interface.
+Key Points:
+•	Must implement the Schedulable interface
+•	Has execute(SchedulableContext sc) method
+•	Can schedule daily, weekly, or monthly using cron expressions
+________________________________________
+1️ Use Case in our Project
+Scenario: Automatically assign skills to all candidates who completed training every day at 11 PM.
+•	Object: Training__c
+•	Related Object: Candidate__c
+•	Action: Run the AssignSkillBatch class automatically
+________________________________________
+2️ Example Scheduled Apex Class
+global class ScheduleAssignSkill implements Schedulable { global void execute(SchedulableContext sc) { // Run the batch to assign skills AssignSkillBatch batch = new AssignSkillBatch(); Database.executeBatch(batch, 200); System.debug('Scheduled Batch Apex executed successfully!'); } } 
+
+ 
+________________________________________
+
+3️ To Schedule the Apex Job
+Option 1: Developer Console (Execute Anonymous)
+// Cron Expression: "0 0 23 * * ?" → Runs daily at 11 PM String cronExp = '0 0 23 * * ?'; System.schedule('Daily Skill Assignment', cronExp, new ScheduleAssignSkill()); 
+Option 2: Salesforce UI
+1.	Go to Setup → Apex Classes → Schedule Apex → New
+2.	Enter Job Name → e.g., Daily Skill Assignment
+3.	Select Apex Class → ScheduleAssignSkill
+4.	Define Frequency → daily, weekly, or monthly
+5.	Set Start & End Dates and Preferred Time
+6.	Click Save
+ 
+________________________________________
+4️ How It Works
+1.	Salesforce runs the ScheduleAssignSkill.execute() method at the scheduled time
+2.	Inside it, the AssignSkillBatch is executed to process completed trainings
+3.	Skills are assigned automatically without any manual intervention
+________________________________________
+✅ Practical use for Your Project
+o	Use case:
+o	Send weekly reminders to candidates for pending training.
+o	Notify employers about candidate shortlists.
+________________________________________
+10. Future Methods
+Future methods allows to:
+•	Run Apex asynchronously
+•	Avoid blocking the user interface
+•	Execute tasks later in a separate thread
+Key Points:
+•	Annotated with @future
+•	Must be static
+•	Can only accept primitive data types or collections (no sObjects or complex objects)
+•	Cannot return a value
+________________________________________
+1️ Use Case in Your Project
+Scenario: Send a notification email to the candidate after a skill is assigned.
+•	Object: Candidate__c
+•	Trigger: After skill assignment
+•	Action: Email candidate asynchronously using a future method
+________________________________________
+2️ Example Future Method
+public class CandidateNotification { @future public static void sendSkillNotification(Id candidateId, String skillName) { Candidate__c cand = [SELECT Id, Email__c, Student_Name__c FROM Candidate__c WHERE Id = :candidateId LIMIT 1]; // Example: Just debug for now System.debug('Email sent to ' + cand.Email__c + ' about new skill: ' + skillName); // In real scenario, you can use Messaging.sendEmail() here } } 
+ 
+________________________________________
+3️ How to Call the Future Method
+// After skill assignment Id candidateId = 'PUT_CANDIDATE_ID_HERE'; String newSkill = 'Java Programming'; CandidateNotification.sendSkillNotification(candidateId, newSkill); 
+•	This call returns immediately; the job runs asynchronously in the background
+ 
+________________________________________
+4️ Trigger Example for Your Project
+You can call the future method from a trigger when a new Skill__c is inserted:
+trigger SkillTrigger on Skill__c (after insert) { for(Skill__c s : Trigger.new) { CandidateNotification.sendSkillNotification(s.Candidate__c, s.Skill_Name__c); } } 
+•	Every time a new skill is added, the candidate gets a notification asynchronously
+ 
+________________________________________
+Benefits
+•	Runs asynchronously, so it doesn’t slow down the user interface
+•	Can handle multiple operations in the background
+•	Simple to implement for notifications, logging, or external API calls
+
+o	Use case: External API callouts to integrate with training providers (Coursera/edX).
+________________________________________
+11. Exception Handling
+Purpose:
+•	Catch and handle runtime errors gracefully
+•	Prevent your Apex code from failing unexpectedly
+•	Log errors for debugging and auditing
+Key Concepts:
+Term	Description
+try	Block of code where errors might occur
+catch	Block to handle the exception
+finally	Optional block that always executes, used for cleanup
+throw	Used to raise a custom exception
+________________________________________
+1️ Use Case in our Project
+Scenario:
+•	While assigning skills or creating jobs, some records might fail due to missing required fields or duplicate values.
+•	Handle these errors gracefully and optionally log them in a custom object like Error_Log__c.
+________________________________________
+2️ Example: Standard Exception Handling
+public class SkillManagerSafe { public static void assignSkillSafe(Id candidateId, String skillName) { try { // Attempt to assign skill Skill__c newSkill = new Skill__c( Candidate__c = candidateId, Skill_Name__c = skillName ); insert newSkill; System.debug('Skill assigned: ' + skillName); } catch(DmlException e) { System.debug('Error inserting Skill: ' + e.getMessage()); // Optional: log error to a custom object Error_Log__c log = new Error_Log__c( Name = 'Skill Assignment Error', Description__c = e.getMessage() ); insert log; } finally { System.debug('Execution completed 
+
+for assignSkillSafe method'); } } } 
+
+ 
+________________________________________
+3️ Example: Throwing Custom Exceptions
+public class JobApplicationHandler { public class JobApplicationException extends Exception {} public static void applyCandidate(Id candidateId, Id jobId) { // Check if application already exists List<Job_Application__c> existingApps = [ SELECT Id FROM Job_Application__c WHERE Candidate__c = :candidateId AND Job__c = :jobId ]; if(!existingApps.isEmpty()) { // Throw custom exception throw new JobApplicationException('Candidate has already applied for this job.'); } // Insert application if no error Job_Application__c newApp = new Job_Application__c( Candidate__c = candidateId, Job__c = jobId, Application_Status__c = 'Applied' ); insert 
+newApp; } } 
+
+ 
+•	Use Case: Prevent duplicates and notify users/programmatically handle errors
+ 
+
+o	Example: Candidate profile missing mandatory details.
+o	try-catch-finally ensures errors don’t break bulk operations.
+
+________________________________________
+12. Test Classes
+o	Test skill assignment, enrollment automation, and job validation.
+o	Ensures 75%+ code coverage for deployment.
+Example:
+@isTest private class SkillManagerTest { @isTest static void testAssignSkill(){ Candidate__c cand = new Candidate__c(Name='Test User', Email__c='test@test.com'); insert cand; SkillManager.assignSkill(cand.Id, 'Apex Development'); List<Skill__c> skills = [SELECT Name FROM Skill__c WHERE Candidate__c = :cand.Id]; System.assertEquals('Apex Development', skills[0].Name); } } 
+
+Key Points:
+•	Must be annotated with @isTest
+•	Should cover at least 75% of Apex code for production deployment
+•	Can create test data in the class (don’t rely on existing org data)
+•	Can test both positive and negative scenarios
+________________________________________
+1️ Test Class for SkillManagerSafe
+@isTest public class SkillManagerSafeTest { @isTest static void testAssignSkillSafeSuccess() { // 1️⃣ Create test Candidate Candidate__c testCandidate = new Candidate__c( Email__c = 'testuser@example.com', ContactNumber__c = '9001234567', Student_Name__c = 'a01gL000000XXXX' // Replace with actual Student Id or create test Student ); insert testCandidate; // 2️⃣ Call the safe method Test.startTest(); SkillManagerSafe.assignSkillSafe(testCandidate.Id, 'Java Programming'); Test.stopTest(); // 3️⃣ Verify Skill record was created List<Skill__c> skills = [SELECT Id, Skill_Name__c, Candidate__c FROM Skill__c WHERE Candidate__c = :testCandidate.Id]; System.assertEquals(1, skills.size(), 'One skill record should be created'); System.assertEquals('Java Programming', skills[0].Skill_Name__c, 'Skill name should match'); } @isTest static void testAssignSkillSafeException() { // 1️⃣ Call method with invalid Candidate Id to force exception Test.startTest(); try { SkillManagerSafe.assignSkillSafe('invalidId', 'Python Programming'); } catch (Exception e) { System.debug('Expected exception caught: ' + e.getMessage()); } Test.stopTest(); // 2️⃣ Verify error was logged List<Error_Log__c> logs = [SELECT Id, Name, Description__c FROM Error_Log__c WHERE Name = 'Skill Assignment Error']; System.assert(logs.size() > 0, 'Error log should be created'); } } 
+ 
+________________________________________
+2️ Steps to Run the Test
+1.	Go to Setup → Apex Classes → click “Run Tests”
+2.	Select SkillManagerSafeTest
+3.	Click Run
+4.	Check Test Results:
+•	testAssignSkillSafeSuccess → should pass
+•	testAssignSkillSafeException → should pass, confirms exception handling works
+We Already implemented in before processes
+________________________________________
+13. Asynchronous Processing
+o	Skill Development Side: Bulk process course enrollments.
+o	Employment Side: Bulk process job applications during campus drives.
+Salesforce provides multiple ways to execute operations in the background without blocking the user interface. In your project, you used:
+Method	Use Case in Your Project	Key Points
+Batch Apex	Assign skills to all candidates who completed training	Handles large datasets (50M+ records)
+Queueable Apex	Assign skills as soon as a training is completed	Can chain jobs, supports complex objects
+Scheduled Apex	Run skill assignments daily or send notifications	Schedule batch or queueable jobs at a specific time
+Future Methods	Send emails/notifications asynchronously	Simple, fire-and-forget, cannot return values
+________________________________________
+Practical Flow for our Project
+1.	Candidate completes training → trigger fires
+2.	Queueable Apex assigns skill asynchronously
+3.	Future Method sends notification email to candidate
+4.	Batch Apex can process all trainings in bulk nightly
+5.	Scheduled Apex runs Batch Apex automatically every day
+Visual Flow:
+Training__c Update → Trigger → Queueable Apex (Assign Skill) → Future Method (Notify Candidate)
+               ↘
+                Scheduled Apex → Batch Apex (Nightly Skill Assignment)
+________________________________________
+2️ Best Practices for Asynchronous Processing
+•	Using Queueable instead of Future for complex objects
+•	Chain Queueables for sequential operations
+•	Batch Apex for bulk operations over thousands/millions of records
+•	Always include Test Classes for async methods:
+•	Use Test.startTest() and Test.stopTest() to execute async jobs in tests
+•	Handle exceptions inside async jobs (try-catch) to avoid silent failures
+•	Use limits wisely:
+•	Queueable: 50 jobs in queue at a time
+•	Batch: can process 50 million records
+•	Future: 50 calls per transaction
+________________________________________
+3️ Example Combined Scenario
+trigger TrainingTrigger on Training__c (after update) { for(Training__c tr : Trigger.new) { Training__c oldTr = Trigger.oldMap.get(tr.Id); if(tr.Training_Status__c == 'Completed' && oldTr.Training_Status__c != 'Completed') { // Assign skill asynchronously System.enqueueJob(new AssignSkillQueueable(tr.Id)); } } } // Scheduled Apex runs nightly global class ScheduleAssignSkill implements Schedulable { global void execute(SchedulableContext sc) { Database.executeBatch(new AssignSkillBatch(), 200); } } // Future method for notifications public class CandidateNotification { @future public static void sendSkillNotification(Id candidateId, String skillName) { // Send email or debug System.debug('Notification sent to Candidate: ' + candidateId + ' for skill: ' + skillName); } } 
+________________________________________
+Summary
+•	Queueable → real-time async processing
+•	Batch Apex → bulk processing (large datasets)
+•	Scheduled Apex → time-based automation
+•	Future Methods → lightweight async (notifications/logs)
+•	Exception Handling → ensures safe execution
+•	Test Classes → verify all scenarios
+________________________________________
+This completes Phase 5: Apex Programming for your Skill Development & Employment Portal.
+
+________________________________________
+🔹 Phase 5 Deliverables
+o	Apex Classes for skill management, enrollment, and job applications.
+o	Triggers with handler classes.
+o	Batch, Queueable, Scheduled Apex jobs.
+o	Exception handling with logs.
+o	Unit test classes with high code coverage.
+________________________________________
+🔹 How Phase 5 Connects Skill Development & Employment
+✅ Candidates can enroll in training programs → Skills automatically updated.
+✅ Employers can search/filter candidates based on acquired skills.
+✅ Job applications are auto-validated against required skills.
+✅ Bulk operations (batch jobs) ensure scalability for large user bases.
+This phase marks the fusion of Skill Development and Employment Management, making the portal more intelligent, automated, and scalable.
 
 
