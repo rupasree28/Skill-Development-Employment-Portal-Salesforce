@@ -1,0 +1,17 @@
+<template>
+    <lightning-card title="Candidate Profile" icon-name="standard:user">
+        <div class="slds-p-around_medium">
+            <p><strong>Name:</strong> {name}</p>
+            <p><strong>Email:</strong> {email}</p>
+            <p><strong>Contact:</strong> {contact}</p>
+            <p><strong>Skills:</strong> {skills}</p>
+            <p><strong>Location:</strong> {place}</p>
+
+            <lightning-input 
+                label="Update Skills" 
+                value={skills} 
+                onchange={handleSkillsChange}>
+            </lightning-input>
+        </div>
+    </lightning-card>
+</template>

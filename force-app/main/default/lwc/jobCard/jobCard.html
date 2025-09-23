@@ -1,0 +1,13 @@
+<template>
+    <lightning-card title={job.Job_Name__c}>
+        <p>Status: {job.Application_Status__c}</p>
+
+        <!-- Status update buttons -->
+        <lightning-button label="Approve" onclick={approve}></lightning-button>
+        <lightning-button label="Reject" onclick={reject}></lightning-button>
+
+        <!-- Navigation buttons -->
+        <lightning-button label="View Candidate" onclick={viewCandidate}></lightning-button>
+        <lightning-button label="View Job" onclick={viewJob}></lightning-button>
+    </lightning-card>
+</template>

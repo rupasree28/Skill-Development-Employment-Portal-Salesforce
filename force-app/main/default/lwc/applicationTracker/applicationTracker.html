@@ -1,0 +1,10 @@
+<template>
+    <template if:true={jobs}>
+        <template for:each={jobs} for:item="job">
+            <c-job-card key={job.Id} job={job} onstatuschange={handleStatusChange}></c-job-card>
+        </template>
+    </template>
+    <template if:false={jobs}>
+        <p>No candidate applications found.</p>
+    </template>
+</template>

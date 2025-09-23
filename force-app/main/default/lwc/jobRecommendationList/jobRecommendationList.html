@@ -1,0 +1,12 @@
+<template>
+    <lightning-card title="Recommended Jobs">
+        <template if:true={jobs.data}>
+            <template for:each={jobs.data} for:item="job">
+                <p key={job.Id}>{job.Name} - {job.Location__c}</p>
+            </template>
+        </template>
+        <template if:true={jobs.error}>
+            <p>Error loading jobs</p>
+        </template>
+    </lightning-card>
+</template>
