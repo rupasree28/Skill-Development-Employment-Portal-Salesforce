@@ -16,7 +16,7 @@ The project follows a **10-phase Salesforce Implementation Lifecycle** (Admin + 
 9. Reporting, Dashboards & Security Review  
 10. Final Presentation & Demo Day  
 
-📌 Current Status: **Phase 6 Completed**
+📌 Current Status: **Phase 7 Completed**
 
 #Project Documentation
 ##Skill Development & Employment Portal for Rural Youth on Salesforce
@@ -2948,5 +2948,642 @@ Conclusion
 	This phase transforms backend data and logic into a real-world, interactive portal that enhances user engagement, simplifies workflows, and bridges the gap between job seekers and employers.
 
 
+
+Phase 7: Integration & External Access 
+Objective:
+To enable the Skill Development and Employment Portal to securely integrate with external systems, provide real-time updates, and support external services while respecting Salesforce limits and security best practices.
+________________________________________
+1. Named Credentials
+o	Named Credentials simplify authentication for callouts to external systems by storing endpoint URLs and authentication settings in a secure, reusable way.
+Purpose in Project:
+•	Allow our portal to connect to external skill certification APIs or job listing services without hardcoding credentials in Apex.
+•	Makes it easy to switch environments (sandbox vs production).
+Example:
+•	Name: SkillCertAPI
+•	URL: https://api.skillcert.com/v1/
+•	Authentication: OAuth 2.0
+Usage in Apex:
+HttpRequest req = new HttpRequest(); req.setEndpoint('callout:SkillCertAPI/getCertification?candidateId=' + candidateId); req.setMethod('GET'); Http http = new Http(); HTTPResponse res = http.send(req); 
+
+Use Case in Project:
+•	Connect your portal to an external skill certification API (e.g., https://api.skillcert.com) to verify candidate skills.
+Practical Steps in Salesforce
+1.	Create a Named Credential
+•	Go to Setup → Named Credentials → New Named Credential
+•	Fill in details:
+•	Label: SkillCertAPI
+•	Name: SkillCertAPI
+•	URL: https://api.skillcert.com/v1/
+•	Identity Type: Named Principal (or per user if needed)
+•	Authentication Protocol: OAuth 2.0
+•	Enter Auth Provider (create one if not already)
+•	Enter Scope, Client ID, Client Secret if required
+•	Generate Authorization Header: ✅ Checked
+•	Save the Named Credential.
+
+ 
+
+2.	Test the Named Credential
+•	You can click “Test Connection” if Salesforce allows.
+•	Make sure it successfully connects to the external API.
+3.	Use in Apex
+HttpRequest req = new HttpRequest(); req.setEndpoint('callout:SkillCertAPI/getCertification?candidateId=' + candidateId); req.setMethod('GET'); Http http = new Http(); HTTPResponse res = http.send(req); if(res.getStatusCode() == 200){ System.debug('Certification data: ' + res.getBody()); } else { System.debug('Error: ' + res.getStatus()); } 
+Important Notes:
+•	The callout: prefix tells Salesforce to use the Named Credential.
+•	No credentials or URLs are hardcoded in Apex.
+•	If your API requires additional headers, you can add them in the req.setHeader() method.
+
+
+ Step 1: Create an External Credential
+1.	Go to Setup → External Credentials → New.
+2.	Fill fields:
+•	Label: SkillCertExtCred
+•	Name: SkillCertExtCred
+•	Authentication Protocol: → For testing, choose No Authentication.
+3.	Save.
+ 
+(If in the future you want OAuth 2.0, this is where you’d configure Client ID, Secret, Token URL, etc.)
+________________________________________
+ Step 2: Map to a Permission Set
+1.	Still inside  External Credential record, find Principals → Click New.
+ 
+
+•	Principal Type: Named Principal (one login for everyone).
+•	Authentication Parameters: Leave empty (since No Auth).
+•	Save.
+
+ 
+
+2.	Assign this External Credential to a Permission Set:
+•	Go to Setup → Permission Sets → New.
+•	Create a Permission Set (e.g., SkillCertAPIAccess).
+•	In the Permission Set, go to External Credential Principal Access → Add 
+
+ 
+
+•	your SkillCertExtCred.
+•	Assign this Permission Set to your user.
+ 
+________________________________________
+Step 3: Create the Named Credential
+Now go back to Named Credentials → New:
+•	Label: SkillCertAPI_Test
+•	Name: SkillCertAPI_Test
+•	URL: https://jsonplaceholder.typicode.com (test API)
+•	Enabled for Callouts: ✅
+•	Authentication → External Credential: select your SkillCertExtCred.
+•	Other fields: leave defaults.
+•	Save.
+ 
+________________________________________
+Step 4: Test in Apex
+HttpRequest req = new HttpRequest(); req.setEndpoint('callout:SkillCertAPI_Test/users'); req.setMethod('GET'); Http http = new Http(); HttpResponse res = http.send(req); System.debug('Status: ' + res.getStatusCode()); System.debug('Body: ' + res.getBody()); 
+ 
+SkillCertCalloutTest.makeCallout();
+Run this in Execute Anonymous → check Debug Logs.
+You should see JSON response (list of fake users). 🎉
+ 
+
+________________________________________
+2. External Services
+o	External Services allow Salesforce to connect with APIs declaratively without writing Apex code.
+Purpose in Project:
+•	Automatically fetch skill endorsements from external platforms for candidates.
+•	Simplify integration with job boards for posting vacancies.
+Implementation Steps:
+1.	Register the external API using Named Credentials.
+2.	Import the API schema (Swagger/OpenAPI) into Salesforce.
+3.	Use Flows or Apex to call the service.
+Example Use Case:
+•	Candidate applies for a course, and external training provider API automatically verifies completion and updates Candidate__c record.
+•	External Services in Salesforce let you bring an external API (REST or OpenAPI/Swagger) into Salesforce without writing full Apex code.
+•	You register the service using its schema (OpenAPI or WSDL).
+•	Salesforce automatically generates Apex Actions that you can use in Flow, Apex, or Process Builder.
+•	For your portal, this means you could integrate with external systems like:
+•	Certification Verification APIs (to check if a candidate’s certification is valid).
+•	Job Market APIs (to fetch latest job listings).
+•	Training Provider APIs (to pull available skill courses).
+________________________________________
+ How to Set It Up (Step-by-Step)
+1.	Prepare the API Schema
+•	If your external system gives you a Swagger (OpenAPI JSON) file or WSDL, download it.
+•	Example: SkillCertAPI.json (OpenAPI spec for a certification validation API).
+2.	Go to External Services in Salesforce
+•	Setup → search for External Services.
+•	Click New External Service.
+3.	Fill the Details
+•	Name: SkillCertServiceExt
+•	Named Credential: choose the one you created earlier → SkillCertService.
+•	Service Schema: upload your OpenAPI (Swagger) or WSDL file.
+ 
+4.	Save and Register
+
+ 
+
+ 
+
+•	Salesforce will analyze the schema.
+•	It generates Apex Invocable Actions automatically.
+•	These appear in Flow (drag-and-drop) and can also be called in Apex.
+
+________________________________________
+🛠 Example in our Project
+Imagine you connected an API called CertVerifyAPI that checks if a candidate’s certificate is valid.
+After registering:
+•	In Flow, you’ll see an action like:
+CertVerifyAPI.ValidateCertificate
+
+ 
+
+•	You can use it in your Candidate Onboarding Flow:
+•	When a candidate uploads a certificate → Flow calls the API → response stored in Certificate_Status__c field.
+ 
+________________________________________
+Result
+•	No need to write full Apex callout code.
+•	The API is now a drag-and-drop building block in your portal workflows.
+•	Fits perfectly with your Skill Development & Employment Portal idea, since you can integrate with certification and job listing providers.
+ 
+ 
+ 
+________________________________________
+3. Web Services (REST/SOAP)
+REST Services:
+•	Provide lightweight, JSON-based integration.
+•	Example: Posting new job openings to an external recruitment portal.
+SOAP Services:
+•	Use XML-based integration for legacy systems.
+•	Example: Pull candidate background verification data from a partner service.
+Example REST Apex Callout:
+HttpRequest req = new HttpRequest(); req.setEndpoint('https://externaljobportal.com/api/jobs'); req.setMethod('POST'); req.setHeader('Content-Type','application/json'); req.setBody(JSON.serialize(jobObj)); // jobObj is Job__c info HttpResponse res = new Http().send(req); 
+Step 1: REST Callout Execution
+We will use your Named Credential (SkillCertService) and a sample REST API.
+1.1: Create Apex Class for REST Callout
+1.	Go to Setup → Apex Classes → New.
+2.	 
+________________________________________
+1.2: Execute REST Callout
+1.	Open Developer Console → Execute Anonymous Window.
+2.	Run:
+SkillCertREST.fetchCandidates(); 
+3.	Check Debug Logs:
+•	Status Code should be 200
+•	Response Body should show candidate data
+4.	Verify in Candidate__c object → records created from API response.
+ 
+________________________________________
+Step 2: SOAP Callout Execution
+SOAP is XML-based. You need WSDL from external system.
+2.1: Generate Apex Class from WSDL
+1.	Download WSDL file from your external API provider.
+2.	In Salesforce: Setup → Apex Classes → Generate from WSDL.
+3.	Salesforce creates Apex classes (e.g., SkillCertSOAP).
+ 
+ 
+________________________________________
+2.2: Create Apex Class to Call SOAP API
+public class SkillCertSOAPCallout { public static void fetchCandidatesSOAP() { SkillCertSOAP.SoapPort service = new SkillCertSOAP.SoapPort(); SkillCertSOAP.CandidateResponse response = service.getCandidates(); System.debug('SOAP Response: ' + response); // Optional: Map response to Salesforce records for(SkillCertSOAP.Candidate c : response.candidates){ Candidate__c rec = new Candidate__c(); rec.Name = c.name; rec.Email__c = c.email; insert rec; } } } 
+________________________________________
+2.3: Execute SOAP Callout
+1.	Open Developer Console → Execute Anonymous Window.
+2.	Run:
+SkillCertSOAPCallout.fetchCandidatesSOAP(); 
+3.	Check Debug Logs:
+•	Response XML is printed
+•	Salesforce records are created/updated
+________________________________________
+Step 3: Tips & Best Practices
+•	Named Credential handles authentication → no need to manually add headers.
+•	@future(callout=true) is needed for callouts from triggers or async operations.
+•	Use Debug Logs to verify status codes and responses.
+•	Always test with a small number of records before bulk operations.
+________________________________________
+After this, your portal can fetch candidates, skills, and jobs via REST or SOAP and store them in Salesforce objects.
+
+________________________________________
+4. Callouts
+Definition:
+Callouts are outbound requests from Salesforce to external services.
+A callout is any request Salesforce makes to an external system (REST or SOAP). Callouts can be done:
+1.	Synchronously from Apex
+2.	Asynchronously using @future(callout=true) or Scheduled Apex
+3.	From Flows using Apex Actions
+________________________________________
+A) REST Callouts from Apex
+Assuming you have a Named Credential (SkillCertAPI_Test) set up:
+ 
+✅ Named Credential automatically handles authentication.
+✅ callout: prefix tells Salesforce to use the Named Credential endpoint.
+
+ 
+
+ 
+________________________________________
+B) SOAP Callouts from Apex
+•	We already covered SOAP in the previous steps.
+•	Ensure you’re using generated Apex classes from WSDL.
+•	Use endpoint_x = 'callout:SkillCertAPI_Test/SkillCertService' to point to the Named Credential.
+________________________________________
+C) Asynchronous Callouts
+If you want to trigger callouts from triggers (like when a candidate is created), you must use:
+ 
+SkillCertAsyncREST.fetchCandidatesAsync(); 
+
+ 
+________________________________________
+D) Callouts in Flows
+1.	Create an Apex Invocable Method:
+public class FlowSkillCertREST { @InvocableMethod(label='Fetch Candidates REST') public static void fetchCandidates(List<String> input){ SkillCertRESTCallout.fetchCandidatesREST(); } } 
+2.	In Flow Builder:
+•	Drag Action → Apex
+•	Select Fetch Candidates REST
+•	Call this from a record-triggered flow or scheduled flow.
+________________________________________
+E) Testing Callouts
+•	Open Developer Console → Execute Anonymous:
+SkillCertRESTCallout.fetchCandidatesREST(); 
+•	Check Debug Logs
+•	Verify new Candidate__c records created in Salesforce
+________________________________________
+Next Step after Callouts:
+•	Handle Platform Events and Change Data Capture to sync external data automatically.
+
+Best Practices for Project:
+•	Always use Named Credentials.
+•	Respect callout limits: Max 100 synchronous callouts per transaction.
+•	Handle errors gracefully using try-catch.
+Example:
+•	When a candidate completes a skill test, Salesforce calls the testing platform API to fetch results and update Skill__c records.
+________________________________________
+5. Platform Events
+Definition:
+Platform Events are Salesforce’s event-driven architecture mechanism for integrating apps in real-time.
+Purpose in Project:
+•	Notify external systems or internal Flows when a candidate's skill is updated.
+•	Enable real-time synchronization with job board updates.
+Platform Events are custom objects that allow real-time communication between Salesforce and external systems. They are like event messages — you can publish events from Salesforce or external systems and subscribe to them to trigger actions.
+________________________________________
+A) Define Platform Event
+1.	Go to Setup → Platform Events → New Platform Event
+ 
+2.	Example:
+
+Field	Value
+Label	CandidateEvent
+Plural Label	CandidateEvents
+API Name	CandidateEvent__e
+Publish Behavior	Publish After Commit (default)
+	
+3.	Add custom fields to store event data:
+
+
+Field Label	API Name	Type
+Candidate Name	CandidateName__c	Text
+Email	Email__c	Email
+Skills	Skills__c	Text
+Action	Action__c	Text (Created/Updated)
+Tip: All fields are read-only for subscribers, like messages.
+ 
+________________________________________
+B) Publish Platform Event from Apex
+Whenever a candidate is created or updated, you can publish a CandidateEvent:
+ 
+________________________________________
+C) Trigger Example to Publish Event
+trigger CandidateTrigger on Candidate__c (after insert, after update) { for(Candidate__c c : Trigger.new){ String actionType = Trigger.isInsert ? 'Created' : 'Updated'; CandidateEventPublisher.publishCandidateEvent(c, actionType); } } 
+•	Now every time a candidate record is inserted or updated, a Platform Event is published.
+________________________________________
+D) Subscribe to Platform Event
+You can subscribe in Salesforce via:
+1.	Process Builder / Flow (Low-Code)
+•	Create a New Flow → Record-Triggered Flow
+•	Event: Platform Event → CandidateEvent__e
+•	Action: Create/Update record or call Apex
+ 
+
+2.	Apex Trigger on Platform Event
+trigger CandidateEventTrigger on CandidateEvent__e (after insert) { for(CandidateEvent__e event : Trigger.new){ System.debug('Received Event: ' + event.CandidateName__c); // Example: Create a record in another object CandidateLog__c log = new CandidateLog__c( CandidateName__c = event.CandidateName__c, Email__c = event.Email__c, Skills__c = event.Skills__c, Action__c = event.Action__c ); insert log; } } 
+•	Use Case: Whenever a candidate is added via external API (REST/SOAP callout), you can publish a Platform Event to notify other parts of your portal or external systems in real-time.
+________________________________________
+E) Test Platform Events
+1.	Insert a Candidate__c record
+2.	Check Debug Logs → see if CandidateEvent__e was published
+3.	Check CandidateEvent__e object in Salesforce → it stores events for 24 hours
+________________________________________
+F) Key Points
+•	Platform Events are asynchronous → they don’t block record creation
+•	Maximum event delivery per 24h → check Salesforce limits
+
+Example Event:
+•	Event: CandidateSkillUpdated__e
+•	Trigger: Candidate skill added or updated
+•	Subscriber: External notification system updates candidate profile.
+________________________________________
+6. Change Data Capture (CDC)
+Definition:
+Change Data Capture publishes changes (create, update, delete, undelete) in Salesforce records in real-time.
+Change Data Capture (CDC) is a real-time event-based feature that automatically tracks changes (create, update, delete, undelete) on standard or custom objects. Unlike Platform Events, CDC is pre-built for Salesforce objects, so you don’t need to define custom event fields.
+________________________________________
+A) Enable Change Data Capture
+1.	Go to Setup → Change Data Capture
+2.	Select the objects you want to track, e.g., Candidate__c, Job__c, Skill__c
+3.	Click Enable
+Now, Salesforce will automatically publish change events for these objects.
+
+ 
+________________________________________
+B) Subscribe to CDC Events in Apex
+You can write an Apex trigger on the CDC event object:
+trigger CandidateCDCTrigger on Candidate__ChangeEvent (after insert) { for(Candidate__ChangeEvent event : Trigger.new){ System.debug('CDC Event Received: ' + event.Candidate__c); System.debug('Change Type: ' + event.ChangeEventHeader.changeType); // Example: Create a log record CandidateLog__c log = new CandidateLog__c( CandidateName__c = event.Name, Email__c = event.Email__c, Skills__c = event.Skill__c, Action__c = String.valueOf(event.ChangeEventHeader.changeType) ); insert log; } } 
+Key Points:
+•	Candidate__ChangeEvent is the CDC object corresponding to your custom object Candidate__c.
+•	ChangeEventHeader.changeType tells you whether it’s CREATE, UPDATE, DELETE, or UNDELETE.
+•	ChangeEventHeader.recordIds gives the ID of the changed record.
+________________________________________
+C) Subscribe to CDC in Flows
+1.	Create a New Flow → Record-Triggered Flow → Platform Event Trigger
+2.	Choose Candidate__ChangeEvent
+3.	Add actions like creating a log record, calling Apex, or sending notifications.
+This is low-code and doesn’t require Apex if you prefer Flow-based automation.
+ 
+________________________________________
+D) Subscribe to CDC in External Systems
+•	CDC events can be consumed outside Salesforce using the CometD/Streaming API.
+•	Example use case: When a candidate is updated in Salesforce, an external HR system receives the event immediately.
+________________________________________
+E) Test Change Data Capture
+1.	Insert or update a Candidate__c record
+2.	Check Debug Logs → CDC trigger fired
+3.	Verify CandidateLog__c or other actions triggered by CDC
+________________________________________
+F) Practical Use in our Portal
+•	Whenever candidates, jobs, or skills are updated externally or internally:
+•	REST/SOAP Callouts → Salesforce → Publish Platform Event → Update other objects
+•	CDC → Real-time event → Trigger automation in portal or external systems
+•	Ensures your Skill Development Portal stays in sync in real-time.
+
+Purpose in Project:
+•	Automatically sync candidate profile updates to external HR or training systems.
+•	Ensure external systems always have the latest job and skill data.
+Example Use Case:
+•	When a Job__c record is updated, CDC pushes the update to external job boards.
+________________________________________
+7. Salesforce Connect
+•	Salesforce Connect allows external data to appear in Salesforce without storing it in the platform.
+Purpose in Project:
+•	Show live job vacancies from partner portals directly in Salesforce.
+•	Link external candidate skill certifications to Candidate__c without duplication.
+Implementation Steps:
+1.	Define an External Data Source.
+2.	Map external objects to Salesforce.
+3.	Use External Lookup Relationships in relevant objects.
+Salesforce Connect allows you to access external data in real-time without storing it in Salesforce. You can view and interact with external objects as if they were native Salesforce objects.
+________________________________________
+A) Key Concepts
+Term	Description
+External Object	Represents a table in an external system. Similar to a custom object but data resides externally.
+External Data Source	Connection settings to the external system (OData, Salesforce, etc.).
+OData	Protocol supported by Salesforce Connect to read/write data from external sources.
+________________________________________
+B) Setup Salesforce Connect
+1.	Create External Data Source
+•	Setup → External Data Sources → New External Data Source
+ 
+•	Example:
+Field	Value
+Data Source Name	SkillCertExternalData
+Type	OData 4.0
+URL	https://api.skillcert.com/odata (replace with your endpoint)
+Authentication	Named Credential → SkillCertAPI_Test
+Identity Type	Named Principal
+Save → Validate and Sync	
+2.	Validate and Sync External Objects
+•	Click Validate and Sync
+•	Salesforce fetches metadata from the external system
+•	Select objects like Candidates, Jobs, Skills → Sync
+
+ 
+
+3.	External Objects in Salesforce
+•	These appear under External Objects in Object Manager
+•	You can create list views, reports, and relationships like custom objects
+________________________________________
+C) Access External Data
+•	Tabular View: Add External Object tabs → Users can see external data in Salesforce UI
+•	Apex Access:
+List<Candidate__x> candidates = [SELECT Name, Email__c, Skill__c FROM Candidate__x LIMIT 10]; System.debug(candidates); 
+_x suffix indicates external object
+
+
+ 
+________________________________________
+D) Practical Use in Your Portal
+•	Your Skill Development Portal can display external candidates, jobs, and skills in real-time without storing them in Salesforce.
+•	Combine with Flows or Apex to perform actions on external data.
+________________________________________
+E) Key Points
+1.	Read/Write depends on the external system and permissions
+2.	No storage limits in Salesforce — data remains external
+3.	Real-time access ensures portal always shows latest data
+
+________________________________________
+8. API Limits
+
+Salesforce enforces limits on API calls to prevent abuse and maintain performance.
+Project Relevance:
+•	Ensure external integrations like skill certification API or job board API do not exceed daily limits.
+•	Example: 15,000 calls/day in Enterprise Edition.
+Best Practices:
+•	Use batching and Platform Events to minimize API usage.
+•	Monitor usage via Setup → API Usage.
+API limits control how many API calls your org can make in a 24-hour period. Every REST/SOAP callout, Apex callout, Salesforce Connect request, or external system request counts toward limits.
+________________________________________
+A) Why API Limits Matter
+•	Avoid hitting limits → your integrations fail temporarily
+•	Keep your REST/SOAP callouts and CDC/Platform Event usage optimized
+•	Salesforce enforces different limits for Enterprise, Developer, and Unlimited Editions
+________________________________________
+B) Types of API Calls Counting Toward Limits
+API Call	Counts toward limit?
+REST API callouts	✅
+SOAP API callouts	✅
+Bulk API	✅
+Streaming API (CDC / Platform Events)	✅
+Salesforce Connect via OData	✅
+Tooling API / Metadata API	✅
+________________________________________
+C) Check API Usage
+1.	System Overview
+•	Setup → System Overview → Check API Requests Used
+ 
+
+2.	API Usage Logs
+•	Setup → API Usage Notifications
+•	Setup → Debug Logs → Filter by API
+ 
+
+3.	Apex Code Check
+Limits.getLimitCallouts(); // Total allowed callouts Limits.getCallouts(); // Callouts used in current transaction 
+
+ 
+
+Example in REST callout Apex:
+System.debug('Total allowed callouts: ' + Limits.getLimitCallouts()); System.debug('Callouts used: ' + Limits.getCallouts()); 
+ 
+________________________________________
+D) Best Practices to Avoid Hitting Limits
+1.	Batch Callouts
+•	Combine multiple REST/SOAP calls in one request if API allows
+2.	Use Named Credentials
+•	Reduces repeated authentication overhead
+3.	Asynchronous Processing
+•	Use @future(callout=true), Queueable, or Batch Apex
+4.	Platform Events / CDC
+•	Prefer events instead of polling external APIs frequently
+5.	Monitor Usage
+•	Use Scheduled Apex to log API usage
+•	Alert admin when usage approaches 75% of limit
+________________________________________
+E) Example: Monitor API Usage in Apex
+public class APILimitMonitor { public static void checkLimits() { System.debug('Total Callouts Allowed: ' + Limits.getLimitCallouts()); System.debug('Callouts Used in this transaction: ' + Limits.getCallouts()); } } 
+•	You can schedule this daily to ensure your portal doesn’t hit limits.
+________________________________________
+9. OAuth & Authentication
+
+OAuth is a secure authorization protocol to access external systems without sharing credentials.
+OAuth (Open Authorization) is a secure protocol that allows your Salesforce org to access external APIs without storing user passwords. It’s widely used for REST/SOAP integrations and Salesforce Connect.
+________________________________________
+A) Why OAuth Matters
+•	Secure authentication without exposing credentials
+•	Supports token-based access (Access Token / Refresh Token)
+•	Works with Named Credentials, which simplifies callouts
+________________________________________
+B) OAuth Flow Types
+OAuth Flow	Use Case
+Username-Password Flow	Simple server-to-server integration (use cautiously)
+Web Server Flow	For apps requiring user login and consent
+JWT Bearer Token Flow	Server-to-server, no interactive login
+Refresh Token Flow	Automatically refresh access token without user login
+For your Skill Development Portal, JWT or Named Credential with OAuth is recommended for secure REST/SOAP callouts.
+ 
+________________________________________
+C) Configure OAuth in Named Credential
+1.	Go to Setup → Named Credentials → New
+2.	Example configuration:
+Field	Value
+Label	SkillCertAPI_OAuth
+URL	https://api.skillcert.com
+Identity Type	Named Principal
+Authentication Protocol	OAuth 2.0
+Authentication Provider	Create new (if not already)
+Scope	read write (as required by API)
+Start Authentication Flow on Save	Checked
+3.	Create Authentication Provider (if using OAuth)
+•	Setup → Auth. Providers → New
+•	Provider Type: Custom or Web Server
+•	Consumer Key & Secret: Provided by external system
+•	Callback URL: Generated by Salesforce
+4.	Save Named Credential → Salesforce handles OAuth token management automatically
+ 
+________________________________________
+D) Use OAuth Named Credential in Apex Callouts
+Http http = new Http(); HttpRequest request = new HttpRequest(); request.setEndpoint('callout:SkillCertAPI_OAuth/candidates'); request.setMethod('GET'); request.setHeader('Content-Type', 'application/json'); HttpResponse response = http.send(request); System.debug('OAuth REST Response: ' + response.getBody()); 
+Salesforce automatically adds the Authorization header with the access token.
+ 
+________________________________________
+E) Refresh Tokens (Optional)
+•	Named Credentials manage refresh tokens automatically
+•	If using manual Apex, you can refresh the token via OAuth endpoint:
+// Example: POST to token endpoint with refresh_token, client_id, client_secret 
+Usually unnecessary if using Named Credentials.
+________________________________________
+F) Security Best Practices
+1.	Never hardcode client secrets or passwords in Apex
+2.	Use Named Credentials + OAuth whenever possible
+3.	Limit scope to only what your portal needs (read, write)
+4.	Audit API usage regularly to avoid abuse
+
+Project Implementation:
+•	Connect to external training or job portals securely.
+•	Use OAuth 2.0 Named Credentials for REST API authentication.
+Example Flow:
+1.	Portal requests access token via OAuth.
+2.	Salesforce stores token in Named Credential.
+3.	Use token in API callouts automatically.
+________________________________________
+10. Remote Site Settings
+Definition:
+Salesforce requires all external endpoints to be whitelisted in Remote Site Settings for security.
+Remote Site Settings allow Salesforce to connect to external URLs. Any REST/SOAP callout to an external system must either use:
+•	Named Credentials (recommended) – no separate Remote Site required
+•	Or Remote Site Settings if not using Named Credentials
+________________________________________
+A) Add a Remote Site
+1.	Go to Setup → Security → Remote Site Settings → New Remote Site
+2.	Example configuration:
+Field	Value
+Remote Site Name	SkillCertAPI
+Remote Site URL	https://api.skillcert.com
+Description	REST/SOAP endpoints for Skill Certification API
+Active	Checked
+3.	Save → Salesforce can now make callouts to this URL
+ 
+________________________________________
+B) Best Practices
+1.	Use Named Credentials whenever possible – handles authentication and headers automatically
+2.	Limit URLs – only add domains required by your portal
+3.	Secure HTTPS URLs – Salesforce requires SSL endpoints for callouts
+________________________________________
+C) Test Callouts After Remote Site Setting
+1.	Go to Developer Console → Execute Anonymous:
+Http http = new Http(); HttpRequest req = new HttpRequest(); req.setEndpoint('https://api.skillcert.com/candidates'); // or callout:SkillCertAPI_Test if Named Credential req.setMethod('GET'); HttpResponse res = http.send(req); System.debug(res.getBody()); 
+ 
+
+2.	If successful → Salesforce can reach external endpoints
+3.	If error: System.CalloutException: You have not defined a remote site setting for this URL → add Remote Site
+
+ 
+________________________________________
+D) Practical Tip for Your Portal
+•	For Skill Development & Employment Portal, every external REST/SOAP API endpoint (like SkillCert API) must be either:
+•	Configured in a Named Credential → preferred
+•	Or added in Remote Site Settings → fallback
+•	This ensures all callouts for candidate/job/skill syncing work without security errors.
+
+Project Implementation:
+•	Add URLs like:
+•	https://api.skillcert.com
+•	https://externaljobportal.com
+•	Ensures Apex callouts succeed without security errors.
+________________________________________
+11. Integration Workflow – Example for Project
+Scenario: Candidate completes a new skill certification, and we want to update portal and external systems automatically.
+1.	Candidate passes skill test → Skill__c record created.
+2.	Platform Event CandidateSkillUpdated__e is published.
+3.	External systems subscribed to event fetch the data via Change Data Capture.
+4.	Apex callout to external skill API verifies certificate using Named Credential.
+5.	Job boards updated using REST API callout with OAuth authentication.
+6.	All external endpoints validated in Remote Site Settings.
+________________________________________
+12. Security Considerations
+•	Use Named Credentials to avoid hardcoding credentials.
+•	Limit external API access using OAuth scopes.
+•	Ensure callouts handle timeouts and errors gracefully.
+•	Monitor API usage to avoid exceeding API limits.
+________________________________________
+Summary Table
+Feature	Purpose in Project	Key Objects / Records
+Named Credentials	Secure API access	Skill__c, Job__c
+External Services	Declarative integration	Candidate__c
+Web Services (REST/SOAP)	Push/pull data from external portals	Job__c, Skill__c
+Callouts	Trigger external actions	Candidate__c, Job__c
+Platform Events	Real-time notifications	CandidateSkillUpdated__e
+Change Data Capture	Real-time record sync	Job__c, Candidate__c
+Salesforce Connect	Access external data without duplication	Job__c, Candidate__c
+API Limits	Prevent system overload	All integrated APIs
+OAuth & Authentication	Secure connection to external services	Job Boards, Skill APIs
+Remote Site Settings	Whitelist endpoints for callouts	All external endpoints
+________________________________________
+This  Phase 7 ties with our previous objects and flows and provides practical examples relevant to our Skill Development and Employment Portal Project.
 
 
