@@ -16,7 +16,7 @@ The project follows a **10-phase Salesforce Implementation Lifecycle** (Admin + 
 9. Reporting, Dashboards & Security Review  
 10. Final Presentation & Demo Day  
 
-📌 Current Status: **Phase 8 Completed**
+📌 Current Status: **Phase 9 Completed**
 
 #Project Documentation
 ##Skill Development & Employment Portal for Rural Youth on Salesforce
@@ -3996,6 +3996,467 @@ Outcomes of Phase 8
 •	Project is now deployment-ready, with both admin-friendly and developer-friendly tools available.
 •	Laid foundation for scalable product distribution via Managed Packages.
 
+
+Phase 9: Reporting, Dashboards & Security Review
+
+Introduction
+o	In this phase, we focus on analyzing project data, monitoring KPIs, and ensuring security compliance within the Skill Development Employment Portal on Salesforce.
+Purpose:
+•	To provide actionable insights into candidate progress, certifications, skills, and job applications.
+•	To ensure data privacy and security for candidates and employers.
+•	To enable decision-making for HR managers, recruiters, and training coordinators.
+
+Scope:
+•	Creating reports and dashboards to track recruitment and training metrics.
+•	Implementing dynamic dashboards for role-based visibility.
+•	Configuring sharing settings, field-level security, session management, login IP ranges, and audit trails.
+
+Key Users:
+•	HR Managers
+•	Recruiters
+•	Training Coordinators
+•	System Administrators
+________________________________________
+1. Reports
+o	Reports in Salesforce provide a way to organize, filter, and present data from objects like Candidate__c, Job__c, Certification__c, and Skill__c.
+Types of Reports:
+1.	Tabular Reports
+•	Displays data in rows and columns (like Excel).
+•	Use Case: List all candidates who have completed a specific certification.
+2.	Summary Reports
+•	Includes groupings, subtotals, and charts.
+•	Use Case: Group candidates by Skill__c and show how many have advanced-level proficiency.
+3.	Matrix Reports
+•	Summarizes data by rows and columns.
+•	Use Case: Compare number of candidates certified by Certification Name vs. Job Role.
+4.	Joined Reports
+•	Combines multiple report blocks with different objects.
+•	Use Case: Show job openings (from Job__c) alongside candidates applying (from Candidate__c).
+Implementing Reports in our project
+We will create reports for the Skill Development Employment Portal using objects like Candidate__c, Job__c, Skill__c, and Certification__c.
+________________________________________
+Step 1: Navigate to Reports
+1.	Login to Salesforce.
+2.	Go to App Launcher → Reports.
+3.	Click New Report.
+
+ 
+________________________________________
+Step 2: Select Report Type
+1.	For candidate-related reports: choose Candidates with Skills (Candidate__c with Skill__c related list).
+2.	For job-related reports: choose Jobs with Candidates (Job__c with Candidate__c related list).
+3.	Click Continue.
+
+ 
+________________________________________
+Step 3: Configure Report Filters
+1.	Add filters based on your project needs:
+•	Example: Show candidates with a specific skill
+1.	Filter: Skill Name = Salesforce
+•	Example: Show active job postings
+1.	Filter: Job Status = Active
+2.	Use date filters to track activity:
+•	Example: Candidates added this month → Created Date = THIS MONTH.
+________________________________________
+Step 4: Choose Report Format
+1.	Tabular: Simple list of candidates or jobs.
+2.	Summary: Group by fields like Skill Name or Job Location.
+3.	Matrix: Compare candidate count across skills vs. job roles.
+4.	Joined: Combine multiple objects if needed (e.g., Job → Candidate → Skill).
++ Candidate Applications).
+________________________________________
+Step 5: Group and Summarize Data (If Required)
+•	For Summary/Matrix reports:
+•	Drag Skill Name to Group Rows → Count of candidates per skill
+•	Drag Job Location to Group Columns → Compare candidates in each location
+•	Summarize key metrics like COUNT of candidates or COUNT of jobs
+
+ 
+________________________________________
+Step 6: Add Charts (Optional)
+•	Click Add Chart → choose type: bar, pie, or donut
+•	Example: Bar chart showing Number of Candidates per Skill
+ 
+
+ 
+________________________________________
+Step 7: Save & Run the Report
+1.	Click Save & Run.
+2.	Name the report:
+•	Candidates by Skills
+•	Active Job Openings
+3.	Select Folder: Public Reports / Private Reports
+________________________________________
+Step 8: Use in Dashboard
+•	Reports can be added as components to Dashboards (next phase).
+
+________________________________________
+2. Report Types
+o	Report Types define which objects and relationships are available in reports.
+•	Standard Report Types: Auto-generated when relationships exist (e.g., Candidates with Skills).
+•	Custom Report Types: Created manually to meet project needs.
+•	A report type in Salesforce is like a template that defines:
+•	The objects (e.g., Candidate__c, Job__c, Skill__c) that the report will use.
+•	The fields available for reporting.
+•	The relationships between objects (e.g., Candidates related to Skills, Jobs related to Candidates).
+Think of it as the foundation for building reports. If the correct report type is not chosen, you won’t see the fields or objects you need.
+________________________________________
+Types of Report Types
+
+1.	Standard Report Types
+•	Automatically created by Salesforce for standard and custom objects.
+•	Example in your project:
+•	Candidates (Candidate__c)
+•	Jobs (Job__c)
+•	Skills (Skill__c)
+
+2.	Custom Report Types
+•	Created manually by admins when standard ones don’t meet requirements.
+•	Allows you to define primary object and related objects.
+•	Example in your project:
+•	Candidates with Skills → Shows candidates and their related skills.
+•	Jobs with Candidates → Shows jobs and candidates applied.
+________________________________________
+In Our Project=>
+•	Use Case 1: HR Manager wants to see candidates grouped by skill.
+•	Report Type: Candidates with Skills
+•	Use Case 2: Recruiter wants to see how many candidates applied for each job.
+•	Report Type: Jobs with Candidates
+•	Use Case 3: Training Coordinator wants a list of all candidates regardless of job.
+•	Report Type: Candidates (standard).
+________________________________________
+How to Create a Custom Report Type
+
+1.	Go to Setup → Report Types.
+2.	Click New Custom Report Type.
+3.	Select:
+•	Primary Object: Candidate__c
+•	Related Object: Skill__c (with “Each Candidate may or may not have related Skills”).
+4.	Save.
+5.	This will now appear when creating a new report.
+ 
+🔹 Example Custom Report Type: Candidates with Certifications and Related Jobs – to analyze which certifications directly influence job placement.
+________________________________________
+3. Dashboards
+o	Dashboards provide visual insights from multiple reports in one place for stakeholders.
+o	A dashboard in Salesforce is a visual representation of one or more reports. It allows managers, recruiters, and coordinators in your Skill Development Employment Portal to see key metrics at a glance.
+•	Reports = Data
+•	Dashboard = Visual Story of Data
+________________________________________
+Key Features
+•	Combines multiple reports into a single view.
+•	Uses charts, tables, metrics, and gauges.
+•	Can be shared with specific roles (HR, Recruiter, Admin).
+•	Refresh schedules available (daily, weekly, monthly).
+________________________________________
+Project-Aligned Dashboard Components
+
+1.	Candidates by Skill (Bar Chart)
+•	Source Report: Candidates grouped by Skill__c
+•	Use: Helps HR see demand and availability of skills.
+2.	Active Job Openings (Metric)
+•	Source Report: Active Job__c records
+•	Use: Shows how many open jobs are available.
+3.	Candidates per Job (Donut Chart)
+•	Source Report: Jobs with Candidates
+•	Use: Recruiters can track which jobs are receiving applications.
+4.	Top Skills in Demand (Pie Chart)
+•	Source Report: Candidates with Skills (grouped by Skill Name)
+•	Use: Identifies trending skills.
+5.	Job Applications Trend (Line Chart)
+•	Source Report: Candidate applications over time (Created Date)
+•	Use: Shows hiring activity across months.
+________________________________________
+How to Create a Dashboard
+1.	Go to App Launcher → Dashboards.
+2.	Click New Dashboard.
+3.	Enter:
+•	Name: Recruitment & Skills Dashboard
+•	Folder: Public Dashboards (or private if needed)
+4.	Add Components:
+•	Click + Component
+•	Choose report (e.g., “Candidates by Skills”)
+•	Select chart type (bar, donut, metric, line)
+5.	Arrange components in a grid layout.
+6.	Save and Run Dashboard.
+
+ 
+________________________________________
+Best Practices for our Project
+•	Keep role-based dashboards: HR vs Recruiter vs Admin.
+•	Use clear labels (e.g., “Candidates by Skills” not “Report1”).
+•	Schedule automatic refresh so managers always see updated data.
+•	Use filters to adjust by Job Location, Skill, or Time Period.
+
+Example Dashboard Components for the Project:
+•	Bar Chart: Number of candidates by skill category.
+•	Donut Chart: Distribution of certifications (Beginner, Intermediate, Advanced).
+•	Table: Active job postings with candidate applications count.
+•	Gauge: % of candidates placed vs. target placement rate.
+________________________________________
+4. Dynamic Dashboards
+o	Dynamic dashboards allow each user to view data based on their own access rights.
+o	A Dynamic Dashboard in Salesforce shows data tailored to the logged-in user — without creating separate dashboards for each role or user.
+o	Instead of making one dashboard for HR, another for Recruiter, another for Manager, you can build one dashboard and set it to “Run as logged-in user.”
+________________________________________
+Modes of Running a Dashboard
+
+1.	Run as Specified User (Static Dashboard)
+•	Always shows data from the perspective of one user (e.g., Admin).
+•	Example: HR Manager sees all candidates.
+2.	Run as Logged-in User (Dynamic Dashboard)
+•	Each person sees the dashboard with their own permissions and data visibility.
+•	Example:
+•	Recruiter logs in → sees only candidates assigned to them.
+•	HR Manager logs in → sees all candidates.
+________________________________________
+Project-Aligned Use Cases
+1.	Recruiter View: Sees candidates only for jobs they manage.
+2.	HR Manager View: Sees all candidates and jobs across the organization.
+3.	Trainer View: Sees candidates grouped by training/skill assigned to them.
+________________________________________
+How to Create a Dynamic Dashboard
+
+1.	Go to Dashboards → New Dashboard (or edit an existing one).
+2.	Add required components (reports: Candidates by Skills, Jobs with Candidates, etc.).
+3.	In the dashboard Properties:
+•	Set “View Dashboard As” → “The logged-in user”.
+4.	Save the dashboard.
+
+ 
+________________________________________
+Best Practices
+•	Use folder sharing carefully: Only share dashboards with roles that need them.
+•	Remember:
+•	Enterprise Edition → 5 dynamic dashboards limit.
+•	Unlimited Edition → 10 dynamic dashboards limit.
+•	Keep naming clear (e.g., “Recruitment Overview – Dynamic”).
+________________________________________
+Project Example
+•	Dynamic Dashboard Name: Candidate & Job Overview (Dynamic)
+•	Recruiter’s View:
+•	Candidates → only their assigned ones
+•	Jobs → only jobs they posted
+•	HR Manager’s View:
+•	Candidates → all candidates
+•	Jobs → all jobs
+
+•	Use Case in Project:
+•	HR Manager sees all candidates and job postings.
+•	Individual Recruiter sees only the candidates and jobs they manage.
+________________________________________
+5. Security Review
+o	To ensure data privacy and compliance, we configure sharing and security settings.
+5.1 Sharing Settings
+•	Private Sharing Model: Candidate details visible only to assigned recruiter/HR.
+•	Controlled Sharing Rules: Employers can only see candidate profiles submitted for their jobs.
+Sharing settings in Salesforce control how records are shared across users, roles, and groups. This ensures that sensitive data is only visible to the right people in your Skill Development Employment Portal.
+________________________________________
+🔹 Implementation for our Project
+1.	Navigate to Sharing Settings
+•	Go to Setup → search Sharing Settings in Quick Find.
+•	Open it.
+2.	Choose Organization-Wide Defaults (OWD)
+•	For each custom object in your project, set the default access level.
+•	Example for your portal objects:
+•	Candidate__c (Candidate Profile) → Private (so only owner + admin can see).
+•	Skill__c (Candidate Skills) → Controlled by Parent (linked to Candidate).
+•	Job__c (Job Openings) → Public Read Only (all can view openings, only owner edits).
+•	Application__c (Job Applications) → Private (candidate sees only their own application).
+•	Employer__c (Company Info) → Public Read/Write (HR/Admin can update, recruiters can view).
+
+ 
+
+3.	Create Sharing Rules (if needed)
+•	Example rules:
+•	Share Candidate Profiles with Recruiters in the same region.
+•	Share Job Applications with HR Managers role.
+•	Share Training Progress with assigned Trainers.
+4.	Test the Sharing Access
+•	Log in as:
+•	Candidate → should only see their profile + applications.
+•	Recruiter → should only see job openings they posted + candidates who applied.
+•	Admin/HR Manager → full access to all records.
+5.	Candidate data is Private → visible only to candidate + assigned recruiter/HR.
+6.	Job postings are Public Read Only → all candidates can see, recruiters manage their own.
+7.	Applications are Private → ensures confidentiality of candidate job applications.
+8.	Employers are Public → recruiters & HR can collaborate.
+
+ 
+
+ 
+
+5.2 Field-Level Security (FLS)
+•	Restrict sensitive fields like Candidate_Phone__c, Candidate_Email__c, or Resume_Link__c.
+•	Example: HR Admin can see all details, but Training Coordinators cannot see personal contact info.
+Field-Level Security controls who can see or edit individual fields on an object. Even if a user has access to the record, they may not see all fields if those fields are hidden by FLS.
+This ensures sensitive information (like salary, contact number, or confidential notes) is protected.
+________________________________________
+🔹 Implementation in our Project
+1. Navigate to Field-Level Security
+•	Go to Setup → Object Manager.
+•	Select an object (e.g., Candidate__c, Job__c, Application__c).
+•	Click Fields & Relationships.
+•	Choose the field you want to secure.
+
+ 
+________________________________________
+2. Set Field Visibility
+•	Inside the field, click Set Field-Level Security.
+•	You’ll see a list of Profiles.
+•	Uncheck Visible for profiles that should not see this field.
+•	You can also control if the field is Read-Only.
+
+ 
+________________________________________
+3. Examples for our Project
+•	Candidate__c (Candidate Profile)
+•	Field: Phone Number → visible only to Recruiters & HR, hidden from other Candidates.
+•	Field: Email → visible to Admin & Recruiters, not editable by Candidates.
+•	Job__c (Job Openings)
+•	Field: Salary Range → visible to Recruiters & HR, hidden from Candidates.
+•	Application__c (Job Applications)
+•	Field: Recruiter Notes → visible only to Recruiters & HR, hidden from Candidates.
+________________________________________
+4. Test the FLS
+•	Login as a Candidate → verify sensitive fields (Salary, Recruiter Notes) are hidden.
+•	Login as a Recruiter → verify they can see/edit job-related fields.
+•	Login as Admin → verify full access.
+________________________________________
+🔹Example
+•	Salary Range → hidden from Candidates.
+•	Recruiter Notes → hidden from Candidates, visible to HR/Recruiters.
+•	Candidate Phone Number → hidden from other Candidates, visible to HR/Recruiters.
+This ensures data privacy & compliance with security best practices.
+
+5.3 Session Settings
+o	Configure session timeouts (e.g., auto logout after 30 min inactivity).
+o	Enable session security (block concurrent logins for same user).
+o	Session Settings in Salesforce control how long a user can stay logged in, what actions are allowed during a session, and protect against unauthorized access.
+o	They help ensure that candidates, recruiters, and admins use the portal securely and that sensitive data isn’t exposed due to idle sessions or hijacked sessions.
+________________________________________
+🔹 How to Configure Session Settings
+1. Navigate to Session Settings
+•	Go to Setup → Search Session Settings in Quick Find.
+________________________________________
+2. Key Configurations
+1.	Session Timeout
+•	Choose how long a user can stay inactive before being logged out.
+•	Example for your project:
+•	Candidates → 30 minutes timeout.
+•	Recruiters & HR → 1 hour timeout.
+•	Admin → 2 hours timeout.
+2.	Require Secure Connections (HTTPS)
+•	Enable to ensure all sessions use HTTPS (encrypted).
+3.	Lock Sessions to IP Address
+•	Ensures a session cannot be hijacked by using a different IP.
+4.	Enable Clickjack Protection
+•	Prevents the portal UI from being embedded in malicious sites.
+5.	Force Re-Login after Timeout
+•	Ensures the user must log in again if the session expires.
+ 
+________________________________________
+🔹 Example for our Project
+•	Candidate Portal Users → Timeout = 30 mins (shorter to protect personal data).
+•	Recruiters & HR → Timeout = 1 hour (enough to review applicants).
+•	System Admin → Timeout = 2 hours (for long configuration tasks).
+•	HTTPS Required → Always enabled.
+•	Clickjack Protection → Enabled for all custom Visualforce & LWC pages.
+________________________________________
+🔹 Benefits
+•	Protects candidate personal data if they forget to log out.
+•	Prevents hackers from reusing stolen session IDs.
+•	Keeps recruiters’ dashboards and sensitive job data safe.
+
+5.4 Login IP Ranges
+•	Restrict logins to corporate network IPs.
+•	Example: Only allow HR Managers to access Salesforce from company premises.
+Login IP Ranges in Salesforce control from which IP addresses users can log in.
+This ensures that only users accessing the portal from approved locations (office, VPN, or trusted networks) can log in.
+________________________________________
+🔹 How to Configure Login IP Ranges
+1. Navigate to Profiles
+•	Go to Setup → Profiles.
+•	Select the Profile you want to configure (e.g., Candidate, Recruiter, HR, Admin).
+________________________________________
+2. Set Login IP Ranges
+•	Scroll down to Login IP Ranges.
+•	Click New.
+•	Enter:
+•	Start IP Address → first IP in the allowed range
+•	End IP Address → last IP in the allowed range
+•	Click Save.
+Example for your project:
+•	Recruiter & HR → Office VPN range: 192.168.1.1 to 192.168.1.255
+•	Candidates → No restriction (or specific trusted IP range if using internal portal)
+•	Admin → Restricted to corporate IP only
+ 
+________________________________________
+🔹 Optional: Use Login Hours
+•	You can also restrict Login Hours per profile to prevent logins outside business hours.
+•	Example: Recruiters → 8 AM to 8 PM only.
+________________________________________
+🔹 Benefits
+•	Prevents unauthorized access from unknown locations.
+•	Adds another layer of security for sensitive candidate and job data.
+•	Combined with Session Settings → ensures portal security from both session hijacks and rogue IP access.
+
+5.5 Audit Trail
+•	Tracks changes in configurations and admin actions.
+•	Example: Record when a field like Placement_Status__c is modified or a new sharing rule is created.
+•	Audit Trail in Salesforce records all configuration and setup changes made in your org.
+It helps track who changed what and when, which is critical for security and compliance.
+•	Example in our project:
+•	If a Recruiter edits a candidate record or a Job Posting, Audit Trail can help you see the change history.
+________________________________________
+🔹 Types of Audit Trails
+1.	Setup Audit Trail
+•	Tracks changes to Salesforce setup/configuration (profiles, roles, fields, permissions, workflow rules, etc.).
+•	Retains last 180 days of changes.
+2.	Field History Tracking
+•	Tracks changes to specific fields on an object.
+•	Example for your project:
+•	Track Candidate Status on Candidate__c
+•	Track Application Status on Application__c
+3.	Login History
+•	Shows who logged in, when, and from which IP.
+________________________________________
+🔹 How to Enable Audit Trail
+1. Setup Audit Trail
+•	Go to Setup → View Setup Audit Trail.
+•	You’ll see the last 180 days of setup changes automatically.
+•	You can download the CSV for documentation or compliance.
+ 
+
+2. Field History Tracking
+1.	Go to Setup → Object Manager → Candidate__c (or any object).
+2.	Click Fields & Relationships → Select the field → Set History Tracking.
+3.	Check the fields you want to track → Save.
+ 
+
+4.	A new Candidate History related list will appear on the object page.
+3. Login History
+•	Go to Setup → Login History.
+•	Shows login attempts, successes, failures, and IP addresses.
+ 
+
+🔹 Benefits
+•	Helps identify unauthorized changes.
+•	Provides compliance reports for HR or IT audits.
+•	Maintains transparency and accountability for all users.
+
+________________________________________
+Benefits of This Phase
+•	Reports & Dashboards: Clear visibility into candidate-job matching progress.
+•	Dynamic Dashboards: Personalized insights for different user roles.
+•	Sharing & Security: Protects candidate data and ensures compliance with organizational policies.
+•	Audit Trail: Accountability for system changes.
+________________________________________
+Deliverables
+•	Custom Reports: Candidates by Skills, Certifications by Job Role, Candidate Placement Progress.
+•	Dashboards: HR Overview Dashboard, Recruiter Activity Dashboard, Training Outcomes Dashboard.
+•	Security Configuration: Sharing rules, field-level security, session settings, login IP ranges.
+•	Documentation of Audit Trail logs for review.
 
 
 
