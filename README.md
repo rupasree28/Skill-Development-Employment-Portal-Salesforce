@@ -16,7 +16,7 @@ The project follows a **10-phase Salesforce Implementation Lifecycle** (Admin + 
 9. Reporting, Dashboards & Security Review  
 10. Final Presentation & Demo Day  
 
-📌 Current Status: **Phase 7 Completed**
+📌 Current Status: **Phase 8 Completed**
 
 #Project Documentation
 ##Skill Development & Employment Portal for Rural Youth on Salesforce
@@ -3585,5 +3585,417 @@ OAuth & Authentication	Secure connection to external services	Job Boards, Skill 
 Remote Site Settings	Whitelist endpoints for callouts	All external endpoints
 ________________________________________
 This  Phase 7 ties with our previous objects and flows and provides practical examples relevant to our Skill Development and Employment Portal Project.
+
+Phase 8: Data Management & Deployment
+________________________________________
+1. Data Import Wizard
+o	The Data Import Wizard is Salesforce’s point-and-click tool for importing simple data into standard and custom objects.
+🔹 How we applied it in our project:
+•	Imported candidate details (Candidate__c) such as Name, Email, Phone, and Address.
+•	Bulk uploaded Skills and Certifications related to candidates for initial setup.
+•	Mapped columns in CSV files to Salesforce fields to ensure data accuracy.
+Key Points:
+•	Supports up to 50,000 records at a time.
+•	Provides field mapping for custom objects (like our Candidate__c, Skill__c, and Job__c).
+•	Suitable for administrators with minimal technical skills.
+
+ (Import candidate, skill & job data)
+1.	Go to Setup → Data Import Wizard.
+2.	Select the object:
+•	Candidate__c (custom object).
+•	Skill__c (skills for candidates).
+•	Job__c (job openings).
+3.	Click Launch Wizard.
+4.	Upload CSV file (example: candidates.csv).
+FirstName,LastName,Email,Phone,Location Rupa,Sree,rupa@example.com,9876543210,Hyderabad Arjun,Kumar,arjun@example.com,9876500000,Bangalore 
+
+Sample csv files =>
+Candidate_Name__c,Student_Name__c,Email__c,ContactNumber__c,Education__c,Place__c,Skills__c
+Rupa Sree,STU-001,rupa@example.com,9876543210,Graduate,Hyderabad,Java; Salesforce; Apex
+Arjun Kumar,STU-002,arjun@example.com,9876500000,Diploma,Bangalore,Python; Data Analysis
+Meena Devi,STU-003,meena@example.com,9876511111,Post Graduate,Chennai,Cloud Computing; AI
+
+
+Job_Name__c,Job_Title__c,Job_Department__c,Job_Description__c,Location__c,Locationn__c,Required_Experience__c,salary_range__c,Application_Status__c
+J-001,Software Engineer,IT,Develop and maintain applications,17.3850,-78.4867,2,6 LPA,Open
+J-002,Data Analyst,Analytics,Analyze data and prepare dashboards,12.9716,77.5946,1,4.5 LPA,Open
+J-003,HR Executive,HR,Manage recruitment and employee relations,28.7041,77.1025,0,3 LPA,Closed
+
+Name,Candidate__c,Job__c,Application_Status__c
+APP-001,CAN-001,J-001,Submitted
+APP-002,CAN-002,J-002,Under Review
+APP-003,CAN-003,J-003,Rejected
+
+
+ 
+
+5.	Map fields → CSV columns → Salesforce fields.
+ 
+
+ 
+6.	Start Import.
+7.	Monitor progress in Bulk Data Load Jobs.
+For Candidate Object=>
+
+ 
+
+For Job Object=>
+ 
+
+
+Application object=>
+ 
+
+ 
+
+👉 In our portal: This is used for initial candidate data load and bulk skill uploads from Excel sheets given by admin.
+
+We even get a mail after a successful import=>
+ 
+Here we can see the records updated in our application object directly through csv file import=>
+ 
+
+________________________________________
+2. Data Loader
+o	The Data Loader is a client application for bulk importing, updating, deleting, and exporting records.
+🔹 How we applied it in our project:
+•	Imported large datasets of candidates and job openings.
+•	Used Export functionality to generate reports of candidate-job matching data for backup.
+•	Updated multiple records for skills and job assignments during testing.
+Data Loader is a client application (separate from Salesforce UI) used for bulk data operations. Unlike Data Import Wizard (limit: 50k records), Data Loader supports up to 5 million records.
+________________________________________
+When to Use Data Loader
+•	Importing large volumes of data (e.g., all Candidates, Jobs, Skills at once).
+•	Performing complex mappings or scheduled imports/exports.
+•	Updating or deleting specific record sets using IDs.
+•	Exporting data for backup or migration.
+________________________________________
+Steps to Use Data Loader 
+1.	Download & Install
+•	Go to Setup → Data Loader (search in Quick Find).
+ 
+
+•	Download the version for Windows or Mac.
+•	Install it on your system.
+ 
+
+2.	Login
+•	Open Data Loader app.
+•	Enter Salesforce username + password + security token.
+
+•	Choose environment:
+•	Production (login.salesforce.com) 
+3.	Choose Operation
+•	Options:
+•	Insert → Add new records.
+•	Update → Modify existing records.
+•	Upsert → Insert new + Update existing.
+•	Delete → Remove records.
+•	Export/Export All → Download data for backup.
+4.	Select Object
+•	Example: Candidate__c
+•	Browse and upload your CSV file.  
+ 
+
+ 
+
+5.	Map Fields
+•	Data Loader will auto-map based on headers.
+•	Unmapped fields → manually drag & drop.
+•	Save the mapping for reuse.
+ 
+
+6.	Run the Job
+•	Choose a folder for Success.csv & Error.csv logs.
+•	Click Next → Finish.
+ 
+
+•	Data Loader will process all rows and give logs.
+ 
+
+7.	Verify
+•	Go to Salesforce → open object tab (e.g., Candidates).
+•	Cross-check record counts and imported data.
+________________________________________
+Example in our Skill Development Portal Project:
+•	Import Jobs.csv → into Job__c.
+•	Import Skills.csv → into Skill__c.
+•	Import Candidate_Skills.csv → into junction object linking Candidates and Skills.
+
+Key Points:
+•	Supports millions of records.
+•	Can schedule data loads for automation.
+•	Allows upsert operations (update + insert).
+________________________________________
+3. Duplicate Rules
+o	To maintain clean candidate and employer data, Duplicate Rules were defined.
+o	Duplicate Rules help prevent or alert users about duplicate records in Salesforce. This is especially important for your Skill Development & Employment Portal, so you don’t accidentally have multiple records for the same candidate, job, or student.
+________________________________________
+Step 1: Go to Duplicate Rules
+1.	In Salesforce Setup → Quick Find → type Duplicate Rules.
+2.	Click Duplicate Rules under Data → Duplicate Management.
+3.	You’ll see existing rules (e.g., Lead, Account, Contact).
+ 
+________________________________________
+Step 2: Create a New Duplicate Rule
+1.	Click New Rule.
+2.	Select Object:
+•	Example: Candidate (Candidate__c)
+3.	Fill in basic info:
+•	Rule Name: Candidate Duplicate Rule
+•	Description: “Prevents duplicate candidate records based on Email or Contact Number.”
+•	Record-Level Security: Choose who the rule applies to (All Users / Admins Only).
+4.	Activation: Don’t activate yet until testing.
+ 
+________________________________________
+Step 3: Define Matching Rule
+•	Duplicate Rules use Matching Rules to decide if two records are duplicates.
+1.	Click Create New Matching Rule (or use existing).
+2.	Select Object: Candidate__c
+3.	Matching Criteria:
+•	Email__c → Exact Match
+•	ContactNumber__c → Exact Match
+ 
+4.	Save & Activate the matching rule.
+ 
+________________________________________
+Step 4: Complete Duplicate Rule
+1.	Back in the Duplicate Rule setup:
+•	Actions on Create / Edit:
+•	Block → Prevent saving a duplicate
+•	Alert → Warn the user but allow save
+•	Example: Choose Alert so users are warned about duplicate candidates.
+2.	Optional:
+•	Report on duplicate records found
+•	Email notifications to admins
+3.	Save the rule.
+
+ 
+________________________________________
+Step 5: Test the Rule
+1.	Go to Candidate Tab → Create New Candidate.
+2.	Enter a candidate with an existing Email or Contact Number.
+3.	Salesforce will warn you (or block) according to your rule.
+ 
+
+The above screen shows that entering email or contact number that already exists raised an error to review and didn’t allow to save due to our duplicate rule on candidate object
+🔹 How we applied it in our project:
+•	Created a rule on Candidate__c to prevent duplicate entries by Email ID.
+•	Configured alerts for recruiters when attempting to add duplicate job openings.
+Key Points:
+•	Prevents bad data quality.
+•	Can be set to Block or Allow with Alert.
+•	Uses Matching Rules behind the scenes.
+________________________________________
+4. Data Export & Backup
+o	Data safety was ensured by enabling Data Export Service for backups.
+o	Data Export & Backup ensures your Salesforce data is safe, recoverable, and portable. For your Skill Development & Employment Portal, this is crucial to protect Candidates, Jobs, Skills, and Applications data.
+________________________________________
+Step 1: Go to Data Export
+1.	In Salesforce Setup → Quick Find, type Data Export.
+2.	Click Data Export under Data Management.
+ 
+________________________________________
+Step 2: Choose Export Type
+1.	Manual Export – one-time export.
+2.	Schedule Export – recurring weekly or monthly backups.
+For initial backup, select Manual Export.
+________________________________________
+Step 3: Select Data
+1.	You’ll see a list of all objects:
+•	Candidates, Jobs, Applications, Skills, Students, etc.
+2.	Check the objects you want to export.
+•	For example: Candidate__c, Job__c, Application__c, Skill__c
+3.	Choose options:
+•	Include all data
+•	Include attachments (if needed)
+•	Include Salesforce Files (optional)
+
+ 
+________________________________________
+Step 4: Start Export
+1.	Click Start Export.
+2.	Salesforce will prepare a ZIP file with your CSV files for each object.
+3.	Once ready, Salesforce will email you a download link.
+Large data may take a few minutes to hours depending on volume.
+ 
+________________________________________
+Step 5: Download & Store
+1.	Download the ZIP file from the link in your email.
+2.	Store it in a safe location (local drive or cloud storage).
+3.	You can now open CSVs for backup, offline analysis, or re-import if needed.
+________________________________________
+Step 6: Optional – Schedule Recurring Backups
+•	Click Schedule Export → set frequency (Weekly / Monthly).
+•	Salesforce will automatically send the export ZIP to your email.
+🔹 How we applied it in our project:
+•	Exported weekly backups of all candidate, job, and employer data.
+•	Downloaded CSV files and stored securely for recovery.
+Key Points:
+•	Provides data in CSV format.
+•	Can be scheduled (weekly/monthly).
+•	Essential for disaster recovery.
+________________________________________
+5. Change Sets
+o	Change Sets were used to migrate customizations between environments.
+o	Change Sets allow you to deploy customizations from one Salesforce org to another (e.g., from Sandbox → Production). This is crucial for your Skill Development & Employment Portal when moving objects, fields, or Lightning components after testing.
+________________________________________
+"The Change Sets process is being skipped due to the unavailability of a Sandbox org login and will be implemented in a subsequent next processes."
+
+Key Points:
+•	Works only between connected Salesforce orgs.
+•	Best for deploying metadata (not data).
+________________________________________
+6. Unmanaged vs Managed Packages
+o	Packages helped organize and share project components.
+o	Salesforce Packages allow you to bundle and distribute metadata (custom objects, fields, flows, Lightning components, etc.) between orgs. This is especially useful when Change Sets aren’t available.
+________________________________________
+1. Unmanaged Packages
+Definition:
+•	A package that contains customizations you can install in another org.
+•	Once installed, the components are editable in the target org.
+Use Case:
+•	Ideal for Developer Edition projects like your Skill Development & Employment Portal.
+Pros:
+•	Easy to create and install.
+•	Editable in target org after installation.
+•	No Sandbox required.
+Cons:
+•	No version control or upgrade path.
+•	Cannot easily uninstall everything (components remain).
+________________________________________
+2. Managed Packages
+Definition:
+•	A package created for distribution via AppExchange.
+•	Components are locked/protected, and updates can be pushed by the provider.
+Use Case:
+•	Ideal for commercial apps that are distributed to multiple orgs.
+Pros:
+•	Upgradeable.
+•	Components can be hidden or protected.
+•	Supports licensing and versioning.
+Cons:
+•	Cannot edit core components in target org.
+•	More complex to create and maintain.
+ 	4.Steps to Create an Unmanaged Package (Practical)
+Step 1: Go to Package Manager
+1.	In Setup → Package Manager.
+2.	Click New Package.
+________________________________________
+Step 2: Enter Package Details
+1.	Package Name: e.g., SkillDevPortal_Components
+2.	Description: “Contains custom objects, fields, flows, and Lightning components for the Skill Development & Employment Portal project.”
+3.	Package Type: Select Unmanaged Package
+•	This allows you to edit components in the target org after installation.
+4.	Click Save
+ 
+________________________________________
+Step 3: Add Components
+1.	After saving, click Add Components.
+2.	Select the component types you want to include:
+•	Custom Objects: Candidate__c, Job__c, Skills__c
+•	Fields & Relationships within these objects
+•	Validation Rules
+•	Flows, Lightning Components, Record Types
+3.	Add all required components → click Add to Package
+ 
+________________________________________
+Step 4: Upload the Package
+1.	Once all components are added, click Upload.
+
+ 
+
+ 
+
+2.	Select the target org version (optional).
+3.	Salesforce generates an installation URL.
+4.	Copy the URL → open it in the target org → click Install.
+________________________________________
+Step 5: Verify Installation
+1.	Log in to the target org.
+2.	Go to Setup → Installed Packages.
+3.	Check that SkillDevPortal_Components is installed and all objects/components are available.
+________________________________________
+
+🔹 How we applied it in our project:
+•	Unmanaged Package: Shared our project internally for testing.
+•	Managed Package (Future Scope): To distribute the Skill Portal as a product for external organizations.
+Key Points:
+•	Unmanaged → editable, good for development.
+•	Managed → locked, versioned, suitable for AppExchange.
+________________________________________
+7. ANT Migration Tool
+The ANT Migration Tool was explored for CI/CD automation.	
+Key Points:
+•	Command-line tool.
+•	Supports scripted deployments.
+•	Useful for large projects with frequent changes.
+________________________________________
+8. VS Code & SFDX
+Salesforce DX (SFDX) with VS Code was used as our main development environment.
+Step 1: Install Prerequisites
+1.	Install VS Code (already installed in your case).
+2.	Install Salesforce CLI (SFDX)
+•	Download from Salesforce CLI.
+•	After installation, confirm in terminal:
+sfdx --version 
+ 
+3.	Install Salesforce Extensions for VS Code
+•	Open VS Code → Extensions → Search Salesforce Extension Pack → Install.
+We have already installed it in our earlier steps
+________________________________________
+🔹 Step 2: Authorize Salesforce Org
+1.	Open VS Code → Terminal.
+2.	Run:
+sfdx force:auth:web:login -d -a MySandbox 
+•	-d → sets as default org
+•	-a → alias name (example: MySandbox)
+3.	A browser window opens → login with Sandbox/Production credentials.
+4.	After success → your org is now linked to VS Code.
+ 
+________________________________________
+🔹 Step 3: Create/Clone Project
+•	To create a new SFDX project:
+sfdx force:project:create -n SkillPortal 
+•	To open existing project → File → Open Folder → select your project.
+•	If already connected with GitHub (like your TCS_mile branch), just open that folder.
+________________________________________
+🔹 Step 4: Retrieve Components from Org
+Example: Retrieve all metadata (classes, lwc, objects, etc.):
+sfdx force:source:retrieve -m ApexClass sfdx force:source:retrieve -m LightningComponentBundle sfdx force:source:retrieve -m CustomObject 
+Or full org metadata:
+sfdx force:source:retrieve -u MySandbox -x manifest/package.xml 
+ 
+________________________________________
+1.	Open your project folder in VS Code (SkillDevEmploymentPortal).
+2.	In the terminal, make sure you’re on the correct branch:
+git checkout TCS_mile 
+3.	Add all changes:
+git add . 
+4.	Commit your changes:
+git commit -m "Updated Skill Development & Employment Portal with latest Salesforce changes" 
+5.	Push to GitHub:
+git push origin TCS_mile 
+
+⚡ This phase ensures you can code, test, and sync your Salesforce project directly from VS Code, instead of relying only on the web UI.and changes had hit into github.
+ 
+
+🔹 How we applied it in our project:
+•	Pulled metadata and pushed changes between Sandbox & VS Code.
+•	Used Scratch Orgs for isolated development and testing.
+•	Integrated with GitHub (TCS_mile branch → future renamed) for source control.
+•	Executed SFDX commands for deployment and retrieval.
+Key Points:
+•	Developer-friendly CLI-based tool.
+•	Encourages source-driven development.
+•	Supports continuous integration (CI/CD) with pipelines.
+________________________________________
+Outcomes of Phase 8
+•	Established data integrity with import/export, duplicate rules, and backups.
+•	Ensured smooth deployment process with Change Sets, ANT, and SFDX.
+•	Project is now deployment-ready, with both admin-friendly and developer-friendly tools available.
+•	Laid foundation for scalable product distribution via Managed Packages.
+
+
 
 
