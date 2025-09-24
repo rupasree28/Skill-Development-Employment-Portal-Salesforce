@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CompactLayout xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Experienced_Level</fullName>
+    <fields>Name</fields>
+    <fields>CandidateID__c</fields>
+    <fields>Email__c</fields>
+    <fields>ContactNumber__c</fields>
+    <fields>Education__c</fields>
+    <label>Experienced Level</label>
+</CompactLayout>
